@@ -125,6 +125,7 @@ endef
 define Package/ntpd/postinst
 #!/bin/sh
 [ -L "$${IPKG_INSTROOT}/usr/sbin/ntpd" ] && rm -f "$${IPKG_INSTROOT}/usr/sbin/ntpd"
+/etc/init.d/ntpd enable
 exit 0
 endef
 
