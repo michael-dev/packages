@@ -1,0 +1,116 @@
+From b2fdf752b33b42631e4877ae7372783e2607e525 Mon Sep 17 00:00:00 2001
+From: Michael Braun <michael-dev@fami-braun.de>
+Date: Mon, 11 May 2015 11:47:48 +0200
+Subject: [PATCH] bigger cache
+
+---
+ src/subnet.c | 44 +++++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 19 deletions(-)
+
+diff --git a/src/subnet.c b/src/subnet.c
+index 2bd5eed..4619ebc 100644
+--- a/src/subnet.c
++++ b/src/subnet.c
+@@ -37,26 +37,32 @@ avl_tree_t *subnet_tree;
+ 
+ /* Subnet lookup cache */
+ 
+-static ipv4_t cache_ipv4_address[2];
+-static subnet_t *cache_ipv4_subnet[2];
+-static bool cache_ipv4_valid[2];
++#define CACHE_SIZE 2048
++
++static ipv4_t cache_ipv4_address[CACHE_SIZE];
++static subnet_t *cache_ipv4_subnet[CACHE_SIZE];
++static bool cache_ipv4_valid[CACHE_SIZE];
+ static int cache_ipv4_slot;
+ 
+-static ipv6_t cache_ipv6_address[2];
+-static subnet_t *cache_ipv6_subnet[2];
+-static bool cache_ipv6_valid[2];
++static ipv6_t cache_ipv6_address[CACHE_SIZE];
++static subnet_t *cache_ipv6_subnet[CACHE_SIZE];
++static bool cache_ipv6_valid[CACHE_SIZE];
+ static int cache_ipv6_slot;
+ 
+-static mac_t cache_mac_address[2];
+-static vlan_t cache_mac_vlan_id[2];
+-static subnet_t *cache_mac_subnet[2];
+-static bool cache_mac_valid[2];
++static mac_t cache_mac_address[CACHE_SIZE];
++static vlan_t cache_mac_vlan_id[CACHE_SIZE];
++static subnet_t *cache_mac_subnet[CACHE_SIZE];
++static bool cache_mac_valid[CACHE_SIZE];
+ static int cache_mac_slot;
+ 
+ void subnet_cache_flush(void) {
+-	cache_ipv4_valid[0] = cache_ipv4_valid[1] = false;
+-	cache_ipv6_valid[0] = cache_ipv6_valid[1] = false;
+-	cache_mac_valid[0] = cache_mac_valid[1] = false;
++	int i;
++
++	for(i = 0; i < CACHE_SIZE; i++) {
++		cache_ipv4_valid[i] = false;
++		cache_ipv6_valid[i] = false;
++		cache_mac_valid[i]  = false;
++	}
+ }
+ 
+ /* Subnet comparison */
+@@ -442,7 +448,7 @@ subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vla
+ 
+ 	// Check if this address is cached
+ 
+-	for(i = 0; i < 2; i++) {
++	for(i = 0; i < CACHE_SIZE; i++) {
+ 		if(!cache_mac_valid[i])
+ 			continue;
+ 		if(owner && cache_mac_subnet[i] && cache_mac_subnet[i]->owner != owner)
+@@ -470,7 +476,7 @@ subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vla
+ 
+ 	// Cache the result
+ 
+-	cache_mac_slot = !cache_mac_slot;
++	cache_mac_slot = (cache_mac_slot + 1) % CACHE_SIZE;
+ 	memcpy(&cache_mac_address[cache_mac_slot], address, sizeof *address);
+ 	cache_mac_subnet[cache_mac_slot] = r;
+ 	cache_mac_vlan_id[cache_mac_slot] = vlan_id;
+@@ -486,7 +492,7 @@ subnet_t *lookup_subnet_ipv4(const ipv4_t *address) {
+ 
+ 	// Check if this address is cached
+ 
+-	for(i = 0; i < 2; i++) {
++	for(i = 0; i < CACHE_SIZE; i++) {
+ 		if(!cache_ipv4_valid[i])
+ 			continue;
+ 		if(!memcmp(address, &cache_ipv4_address[i], sizeof *address))
+@@ -510,7 +516,7 @@ subnet_t *lookup_subnet_ipv4(const ipv4_t *address) {
+ 
+ 	// Cache the result
+ 
+-	cache_ipv4_slot = !cache_ipv4_slot;
++	cache_ipv4_slot = (cache_ipv4_slot + 1) % CACHE_SIZE;
+ 	memcpy(&cache_ipv4_address[cache_ipv4_slot], address, sizeof *address);
+ 	cache_ipv4_subnet[cache_ipv4_slot] = r;
+ 	cache_ipv4_valid[cache_ipv4_slot] = true;
+@@ -525,7 +531,7 @@ subnet_t *lookup_subnet_ipv6(const ipv6_t *address) {
+ 
+ 	// Check if this address is cached
+ 
+-	for(i = 0; i < 2; i++) {
++	for(i = 0; i < CACHE_SIZE; i++) {
+ 		if(!cache_ipv6_valid[i])
+ 			continue;
+ 		if(!memcmp(address, &cache_ipv6_address[i], sizeof *address))
+@@ -549,7 +555,7 @@ subnet_t *lookup_subnet_ipv6(const ipv6_t *address) {
+ 
+ 	// Cache the result
+ 
+-	cache_ipv6_slot = !cache_ipv6_slot;
++	cache_ipv6_slot = (cache_ipv6_slot + 1) % CACHE_SIZE;
+ 	memcpy(&cache_ipv6_address[cache_ipv6_slot], address, sizeof *address);
+ 	cache_ipv6_subnet[cache_ipv6_slot] = r;
+ 	cache_ipv6_valid[cache_ipv6_slot] = true;
+-- 
+1.9.1
+
