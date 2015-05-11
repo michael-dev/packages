@@ -1,0 +1,72 @@
+From 5a674599f7c43f486f4c6dc6f4af6e35f5da6746 Mon Sep 17 00:00:00 2001
+From: Michael Braun <michael-dev@fami-braun.de>
+Date: Mon, 11 May 2015 12:01:16 +0200
+Subject: [PATCH] lru cache
+
+---
+ src/subnet.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/src/subnet.c b/src/subnet.c
+index 4619ebc..89e37e6 100644
+--- a/src/subnet.c
++++ b/src/subnet.c
+@@ -53,7 +53,7 @@ static mac_t cache_mac_address[CACHE_SIZE];
+ static vlan_t cache_mac_vlan_id[CACHE_SIZE];
+ static subnet_t *cache_mac_subnet[CACHE_SIZE];
+ static bool cache_mac_valid[CACHE_SIZE];
+-static int cache_mac_slot;
++static time_t cache_mac_lru[CACHE_SIZE];
+ 
+ void subnet_cache_flush(void) {
+ 	int i;
+@@ -445,18 +445,30 @@ subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vla
+ 	subnet_t *p, *r = NULL;
+ 	avl_node_t *n;
+ 	int i;
++	time_t min_lru = now + 1;
++	int cache_mac_slot = 0;
+ 
+ 	// Check if this address is cached
+ 
+ 	for(i = 0; i < CACHE_SIZE; i++) {
++		if(!cache_mac_valid[i] && min_lru != 0) {
++			min_lru = 0;
++			cache_mac_slot = i;
++		}
+ 		if(!cache_mac_valid[i])
+ 			continue;
++		if (min_lru > cache_mac_lru[i]) {
++			min_lru = cache_mac_lru[i];
++			cache_mac_slot = i;
++		}
+ 		if(owner && cache_mac_subnet[i] && cache_mac_subnet[i]->owner != owner)
+ 			continue;
+ 		if(vlan_id != cache_mac_vlan_id[i])
+ 			continue;
+-		if(!memcmp(address, &cache_mac_address[i], sizeof *address))
+-			return cache_mac_subnet[i];
++		if(memcmp(address, &cache_mac_address[i], sizeof *address))
++			continue;
++		cache_mac_lru[i] = now;
++		return cache_mac_subnet[i];
+ 	}
+ 
+ 	// Search all subnets for a matching one
+@@ -475,12 +487,11 @@ subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vla
+ 	}
+ 
+ 	// Cache the result
+-
+-	cache_mac_slot = (cache_mac_slot + 1) % CACHE_SIZE;
+ 	memcpy(&cache_mac_address[cache_mac_slot], address, sizeof *address);
+ 	cache_mac_subnet[cache_mac_slot] = r;
+ 	cache_mac_vlan_id[cache_mac_slot] = vlan_id;
+ 	cache_mac_valid[cache_mac_slot] = true;
++	cache_mac_lru[cache_mac_slot] = now;
+ 
+ 	return r;
+ }
+-- 
+1.9.1
+
