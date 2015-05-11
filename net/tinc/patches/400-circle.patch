@@ -1,0 +1,86 @@
+From 4ae32690400887d950e787f419b223dfe7951af5 Mon Sep 17 00:00:00 2001
+From: Michael Braun <michael-dev@fami-braun.de>
+Date: Mon, 11 May 2015 16:45:31 +0200
+Subject: [PATCH] refuse incoming bcast packets with local source mac
+
+---
+ src/route.c  | 14 ++++++++++++--
+ src/subnet.c |  7 ++++---
+ src/subnet.h |  2 +-
+ 3 files changed, 17 insertions(+), 6 deletions(-)
+
+diff --git a/src/route.c b/src/route.c
+index 5782c56..d04b751 100644
+--- a/src/route.c
++++ b/src/route.c
+@@ -193,7 +193,7 @@ static void learn_mac(mac_t *address, vlan_t vlan_id) {
+ 	avl_node_t *node;
+ 	connection_t *c;
+ 
+-	subnet = lookup_subnet_mac(myself, address, vlan_id);
++	subnet = lookup_subnet_mac(myself, address, vlan_id, 0);
+ 
+ 	/* If we don't know this MAC address yet, store it */
+ 
+@@ -839,9 +839,19 @@ static void route_mac(node_t *source, vpn_packet_t *packet) {
+ 	/* Lookup destination address */
+ 
+ 	memcpy(&dest, &packet->data[0], sizeof dest);
+-	subnet = lookup_subnet_mac(NULL, &dest, vlan_id);
++	subnet = lookup_subnet_mac(NULL, &dest, vlan_id, 0);
+ 
+ 	if(!subnet) {
++		/* refuse packets from others with source mac owned by us */
++		if (source != myself) {
++			mac_t src;
++			memcpy(&src, &packet->data[6], sizeof src);
++			subnet = lookup_subnet_mac(myself, &src, vlan_id, 1);
++			if(subnet && subnet->owner == myself) {
++				ifdebug(TRAFFIC) logger(LOG_WARNING, "Packet looping back to us from %s (%s)!", source->name, source->hostname);
++				return;
++			}
++		}
+ 		broadcast_packet(source, packet);
+ 		return;
+ 	}
+diff --git a/src/subnet.c b/src/subnet.c
+index 89e37e6..0afe566 100644
+--- a/src/subnet.c
++++ b/src/subnet.c
+@@ -441,16 +441,17 @@ subnet_t *lookup_subnet(const node_t *owner, const subnet_t *subnet) {
+ 	return avl_search(owner->subnet_tree, subnet);
+ }
+ 
+-subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vlan_t vlan_id) {
++subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vlan_t vlan_id, int cache_seg) {
+ 	subnet_t *p, *r = NULL;
+ 	avl_node_t *n;
+ 	int i;
+ 	time_t min_lru = now + 1;
+-	int cache_mac_slot = 0;
++	int base = (cache_seg ? (CACHE_SIZE / 2) : 0);
++	int cache_mac_slot = base;
+ 
+ 	// Check if this address is cached
+ 
+-	for(i = 0; i < CACHE_SIZE; i++) {
++	for(i = base; i < base + CACHE_SIZE / 2; i++) {
+ 		if(!cache_mac_valid[i] && min_lru != 0) {
+ 			min_lru = 0;
+ 			cache_mac_slot = i;
+diff --git a/src/subnet.h b/src/subnet.h
+index bed6919..49a8985 100644
+--- a/src/subnet.h
++++ b/src/subnet.h
+@@ -80,7 +80,7 @@ extern void subnet_update(struct node_t *, subnet_t *, bool);
+ extern bool net2str(char *, int, const subnet_t *);
+ extern bool str2net(subnet_t *, const char *);
+ extern subnet_t *lookup_subnet(const struct node_t *, const subnet_t *);
+-extern subnet_t *lookup_subnet_mac(const struct node_t *, const mac_t *, const vlan_t);
++extern subnet_t *lookup_subnet_mac(const struct node_t *, const mac_t *, const vlan_t, int);
+ extern subnet_t *lookup_subnet_ipv4(const ipv4_t *);
+ extern subnet_t *lookup_subnet_ipv6(const ipv6_t *);
+ extern void dump_subnets(void);
+-- 
+1.9.1
+
