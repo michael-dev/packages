@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2014 OpenWrt.org
+# Copyright (C) 2006-2015 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sudo
-PKG_VERSION:=1.8.11p2
+PKG_VERSION:=1.8.14p3
 PKG_RELEASE:=1
 PKG_LICENSE:=ISC
 PKG_LICENSE_FILES:=doc/LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://www.sudo.ws/sudo/dist
-PKG_MD5SUM:=84012b4871b6c775c957cd310d5bad87
+PKG_SOURCE_URL:=http://www.sudo.ws/dist
+PKG_MD5SUM:=93dbd1e47c136179ff1b01494c1c0e75
 
 PKG_INSTALL:=1
 
@@ -40,6 +40,7 @@ endef
 
 define Package/sudo/conffiles
 /etc/sudoers
+/etc/sudoers.d/
 endef
 
 CONFIGURE_ARGS+= \
@@ -63,8 +64,8 @@ define Host/Compile
 endef
 
 define Host/Install
-	$(INSTALL_DIR) $(STAGING_DIR_HOST)/bin
-	$(CP) $(HOST_BUILD_DIR)/lib/util/mksig{list,name} $(STAGING_DIR_HOST)/bin/
+	$(INSTALL_DIR) $(STAGING_DIR)/host/bin
+	$(CP) $(HOST_BUILD_DIR)/lib/util/mksig{list,name} $(STAGING_DIR)/host/bin/
 endef
 
 $(eval $(call HostBuild))

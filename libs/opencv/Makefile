@@ -1,6 +1,6 @@
 #
 # Copyright (C) 2013-2014 wrtnode.com
-# Copyright (C) 2015 OpenWrt.org
+# Copyright (C) 2015-2016 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -9,19 +9,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=opencv
-PKG_VERSION:=2.4.10
-PKG_RELEASE:=2
+PKG_VERSION:=3.1.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).zip
-PKG_SOURCE_URL:=http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/2.4.10/
-PKG_MD5SUM:=ec63952d3a3dff965d5fdde765926821
+PKG_SOURCE_URL:=http://sourceforge.net/projects/opencvlibrary/files/opencv-unix/$(PKG_VERSION)/
+PKG_MD5SUM:=6082ee2124d4066581a7386972bfd52a
 
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
-
 
 define Package/opencv/Default/description
  OpenCV (Open Source Computer Vision Library) is an open source computer
@@ -35,18 +34,17 @@ endef
 define Package/opencv
   SECTION:=libs
   CATEGORY:=Libraries
-  TITLE:=opencv-2.4.10
+  TITLE:=OpenCV
   URL:=http://opencv.org/
   MAINTAINER:=WRTnode Team <pub@wrtnode.com>
   DEPENDS:=+libpthread +librt +libstdcpp +zlib +libjpeg
 endef
 
-
 PKG_INSTALL:=1
 
 CMAKE_OPTIONS += -DBUILD_opencv_gpu:BOOL=OFF \
-	 -DWITH_1394:BOOL=OFF -DBUILD_opencv_stitching:BOOL=OFF \
-	 -DBUILD_opencv_superres:BOOL=OFF -DBUILD_opencv_ts:BOOL=OFF \
+	-DWITH_1394:BOOL=OFF -DBUILD_opencv_stitching:BOOL=OFF \
+	-DBUILD_opencv_superres:BOOL=OFF -DBUILD_opencv_ts:BOOL=OFF \
 	-DBUILD_opencv_highgui:BOOL=OFF \
 	-DBUILD_opencv_videostab:BOOL=OFF \
 	-DWITH_FFMPEG:BOOL=OFF \
@@ -54,6 +52,8 @@ CMAKE_OPTIONS += -DBUILD_opencv_gpu:BOOL=OFF \
 	-DWITH_LIBV4L:BOOL=OFF \
 	-DWITH_PNG:BOOL=OFF \
 	-DWITH_TIFF:BOOL=OFF \
+	-DCMAKE_VERBOSE:BOOL=OFF \
+	-DENABLE_PRECOMPILED_HEADERS=OFF
 
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include

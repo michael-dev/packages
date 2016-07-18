@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2008-2014 OpenWrt.org
+# Copyright (C) 2008-2015 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,8 +8,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gstreamer1
-PKG_VERSION:=1.4.4
-PKG_RELEASE:=2
+PKG_VERSION:=1.6.2
+PKG_RELEASE:=1
 
 PKG_MAINTAINER:=W. Michael Petullo <mike@flyn.org>
 
@@ -19,7 +19,7 @@ PKG_LICENSE_FILES:=COPYING
 PKG_BUILD_DIR:=$(BUILD_DIR)/gstreamer-$(PKG_VERSION)
 PKG_SOURCE:=gstreamer-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://gstreamer.freedesktop.org/src/gstreamer/
-PKG_MD5SUM:=98f4a6d45a28dd195144baef0244ba38
+PKG_MD5SUM:=5e610b5a94c209487310739b39b6c464
 
 PKG_FIXUP:=autoreconf
 PKG_REMOVE_FILES:=autogen.sh aclocal.m4
@@ -133,6 +133,11 @@ define Build/InstallDev
 	( cd $(PKG_INSTALL_DIR); $(CP) \
 		./usr/include/gstreamer-$(GST_VERSION)/* \
 		$(1)/usr/include/gstreamer-$(GST_VERSION)/ \
+	)
+	$(INSTALL_DIR) $(1)/usr/lib/gstreamer-$(GST_VERSION)/include/gst
+	( cd $(PKG_INSTALL_DIR); $(CP) \
+		./usr/lib/gstreamer-$(GST_VERSION)/include/gst/*.h \
+		$(1)/usr/lib/gstreamer-$(GST_VERSION)/include/gst \
 	)
 	$(INSTALL_DIR) $(1)/usr/lib
 	( cd $(PKG_INSTALL_DIR); $(CP) \

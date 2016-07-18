@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2015 OpenWrt.org
+# Copyright (C) 2006-2016 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,17 +8,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ntp
-PKG_VERSION:=4.2.8
-PKG_RELEASE:=2
+PKG_VERSION:=4.2.8p7
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://www.eecis.udel.edu/~ntp/ntp_spool/ntp4/ntp-4.2/
-PKG_MD5SUM:=6972a626be6150db8cfbd0b63d8719e7
+PKG_MD5SUM:=46dfba933c3e4bc924d8e55068797578
 
 PKG_LICENSE:=Unique
 PKG_LICENSE_FILES:=COPYRIGHT html/copyright.html
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 PKG_FIXUP:=autoreconf
 PKG_LIBTOOL_PATHS:=. sntp
@@ -33,7 +31,7 @@ define Package/ntpd/Default
   TITLE:=ISC ntp
   MAINTAINER:=Peter Wagner <tripolar@gmx.at>
   URL:=http://www.ntp.org/
-  DEPENDS:=+libcap +libopenssl +libpthread
+  DEPENDS:=+libopenssl +libpthread +libcap
 endef
 
 define Package/ntpd/Default/description
@@ -45,7 +43,6 @@ endef
 define Package/ntpd
 $(call Package/ntpd/Default)
   TITLE+= server
-  DEPENDS+= +libcap
   USERID:=ntp=123:ntp=123
 endef
 
@@ -80,6 +77,7 @@ endef
 define Package/ntp-keygen
 $(call Package/ntpd/Default)
   TITLE+=keygen
+  DEPENDS+= +libevent2-core
 endef
 
 define Package/ntp-keygen/description
@@ -95,7 +93,9 @@ endef
 CONFIGURE_VARS += \
 	ac_cv_header_md5_h=no \
 	ac_cv_lib_rt_sched_setscheduler=no \
-	ac_cv_header_dns_sd_h=no
+	ac_cv_header_dns_sd_h=no \
+	hw_cv_func_snprintf_c99=yes \
+	hw_cv_func_vsnprintf_c99=yes \
 
 CONFIGURE_ARGS += \
 	--disable-all-clocks \
@@ -105,6 +105,7 @@ CONFIGURE_ARGS += \
 	--enable-NMEA \
 	--enable-LOCAL-CLOCK \
 	--enable-SHM \
+	--enable-ATOM \
 	--enable-linuxcaps \
 	--with-yielding-select=yes \
 	--with-crypto \

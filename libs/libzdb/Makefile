@@ -12,17 +12,20 @@ PKG_VERSION:=3.0
 PKG_RELEASE:=1
 PKG_LICENSE:=GPL-3.0
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://www.tildeslash.com/libzdb/dist/
 PKG_MD5SUM:=3bb9efff10a1f3ebc5b76c1055c48635
-PKG_CAT:=zcat
+
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
 PKG_BUILD_DEPENDS:=libzdb/host
 
 include $(INCLUDE_DIR)/package.mk
+
+ifeq ($(CONFIG_USE_MUSL),n)
+    LDFLAGS += -lnsl
+endif
 
 define Package/libzdb
     SECTION:=libs
@@ -64,8 +67,8 @@ define Host/Compile
 endef
 
 define Host/Install
-	$(INSTALL_DIR) $(STAGING_DIR_HOST)/bin
-	$(CP) $(HOST_BUILD_DIR)/tools/bin/filterh $(STAGING_DIR_HOST)/bin/
+	$(INSTALL_DIR) $(STAGING_DIR)/host/bin
+	$(CP) $(HOST_BUILD_DIR)/tools/bin/filterh $(STAGING_DIR)/host/bin/
 endef
 
 $(eval $(call HostBuild))

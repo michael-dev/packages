@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 OpenWrt.org
+# Copyright (C) 2014-2016 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,34 +8,28 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=shairplay
-PKG_VERSION:=2014-10-27
-PKG_RELEASE:=2
+PKG_VERSION:=2016-01-01
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git://github.com/juhovh/shairplay.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=64d59e3087f829006d091fa0d114efb50972a2bf
+PKG_SOURCE_VERSION:=ce80e005908f41d0e6fde1c4a21e9cb8ee54007b
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MAINTAINER:=Álvaro Fernández Rojas <noltari@gmail.com>
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 
-include $(INCLUDE_DIR)/package.mk
+PKG_FIXUP:=autoreconf
 
-PKG_FIXUP:=libtool
+include $(INCLUDE_DIR)/package.mk
 
 define Package/shairplay
   SECTION:=sound
   CATEGORY:=Sound
   DEPENDS:=+libao +libavahi-compat-libdnssd +libltdl +libpthread
   TITLE:=Shairplay
-endef
-
-define Build/Configure
-	(cd $(PKG_BUILD_DIR)/$(CONFIGURE_PATH); \
-	./autogen.sh;)
-	$(call Build/Configure/Default)
 endef
 
 define Package/shairplay/description

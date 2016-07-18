@@ -1,12 +1,12 @@
 #
-# Copyright (C) 2007-2014 OpenWrt.org
+# Copyright (C) 2006-2016 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
 
 PYTHON_VERSION:=2.7
-PYTHON_VERSION_MICRO:=9
+PYTHON_VERSION_MICRO:=11
 
 PYTHON_DIR:=$(STAGING_DIR)/usr
 PYTHON_BIN_DIR:=$(PYTHON_DIR)/bin
@@ -17,18 +17,14 @@ PYTHON_PKG_DIR:=/usr/lib/python$(PYTHON_VERSION)/site-packages
 
 PYTHON:=python$(PYTHON_VERSION)
 
-HOST_PYTHON_LIB_DIR:=$(STAGING_DIR_HOST)/lib/python$(PYTHON_VERSION)
-HOST_PYTHON_BIN:=$(STAGING_DIR_HOST)/bin/python2
-
 PYTHONPATH:=$(PYTHON_LIB_DIR):$(STAGING_DIR)/$(PYTHON_PKG_DIR):$(PKG_INSTALL_DIR)/$(PYTHON_PKG_DIR)
-define HostPython
-	(	export PYTHONPATH="$(PYTHONPATH)"; \
-		export PYTHONOPTIMIZE=""; \
-		export PYTHONDONTWRITEBYTECODE=1; \
-		$(1) \
-		$(HOST_PYTHON_BIN) $(2); \
-	)
-endef
+
+# These configure args are needed in detection of path to Python header files
+# using autotools.
+CONFIGURE_ARGS += \
+	_python_sysroot="$(STAGING_DIR)" \
+	_python_prefix="/usr" \
+	_python_exec_prefix="/usr"
 
 PKG_USE_MIPS16:=0
 # This is required in addition to PKG_USE_MIPS16:=0 because otherwise MIPS16
@@ -49,7 +45,7 @@ define PyPackage
   $(call shexport,PyPackage/$(1)/filespec)
 
   define Package/$(1)/install
-	find $(PKG_INSTALL_DIR) -name "*\.pyc" -o -name "*\.pyo" | xargs rm -f
+	find $(PKG_INSTALL_DIR) -name "*\.pyc" -o -name "*\.pyo" -o -name "*\.exe" | xargs rm -f
 	@echo "$$$$$$$$$$(call shvar,PyPackage/$(1)/filespec)" | ( \
 		IFS='|'; \
 		while read fop fspec fperm; do \
@@ -84,6 +80,8 @@ define PyPackage
   endef
 endef
 
+$(call include_mk, python-host.mk)
+
 # $(1) => build subdir
 # $(2) => additional arguments to setup.py
 # $(3) => additional variables
@@ -93,6 +91,7 @@ define Build/Compile/PyMod
 		cd $(PKG_BUILD_DIR)/$(strip $(1)); \
 		CC="$(TARGET_CC)" \
 		CCSHARED="$(TARGET_CC) $(FPIC)" \
+		CXX="$(TARGET_CXX)" \
 		LD="$(TARGET_CC)" \
 		LDSHARED="$(TARGET_CC) -shared" \
 		CFLAGS="$(TARGET_CFLAGS)" \
@@ -104,6 +103,24 @@ define Build/Compile/PyMod
 		, \
 		./setup.py $(2) \
 	)
-	find $(PKG_INSTALL_DIR) -name "*\.pyc" -o -name "*\.pyo" | xargs rm -f
+	find $(PKG_INSTALL_DIR) -name "*\.pyc" -o -name "*\.pyo" -o -name "*\.exe" | xargs rm -f
+endef
+
+define PyMod/Default
+  define Build/Compile
+	$$(call Build/Compile/PyMod,,install --prefix=/usr --root=$(PKG_INSTALL_DIR))
+  endef
+
+  define Package/$(PKG_NAME)/install
+	$(INSTALL_DIR) $$(1)$(PYTHON_PKG_DIR) $$(1)/usr/bin
+	if [ -d $(PKG_INSTALL_DIR)/usr/bin ]; then find $(PKG_INSTALL_DIR)/usr/bin -mindepth 1 -maxdepth 1 -type f -exec $(CP) \{\} $$(1)/usr/bin/ \; ; fi
+	find $(PKG_INSTALL_DIR)$(PYTHON_PKG_DIR) -mindepth 1 -maxdepth 1 \( -type f -o -type d \) -exec $(CP) \{\} $$(1)$(PYTHON_PKG_DIR)/ \;
+  endef
+
+  define Build/InstallDev
+	$(INSTALL_DIR) $$(1)/usr/bin $$(1)$(PYTHON_PKG_DIR)
+	if [ -d $(PKG_INSTALL_DIR)/usr/bin ]; then find $(PKG_INSTALL_DIR)/usr/bin -mindepth 1 -maxdepth 1 -type f -exec $(CP) \{\} $$(1)/usr/bin/ \; ; fi
+	find $(PKG_INSTALL_DIR)$(PYTHON_PKG_DIR) -mindepth 1 -maxdepth 1 \( -type f -o -type d \) -exec $(CP) \{\} $$(1)$(PYTHON_PKG_DIR)/ \;
+  endef
 endef
 
