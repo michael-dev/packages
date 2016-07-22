@@ -9,11 +9,10 @@ Subject: [PATCH] refuse incoming bcast packets with local source mac
  src/subnet.h |  2 +-
  3 files changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/src/route.c b/src/route.c
-index 5782c56..d04b751 100644
+diff -rNuw a/src/route.c b/src/route.c
 --- a/src/route.c
 +++ b/src/route.c
-@@ -193,7 +193,7 @@ static void learn_mac(mac_t *address, vlan_t vlan_id) {
+@@ -442,7 +442,7 @@
  	avl_node_t *node;
  	connection_t *c;
  
@@ -22,7 +21,7 @@ index 5782c56..d04b751 100644
  
  	/* If we don't know this MAC address yet, store it */
  
-@@ -839,9 +839,19 @@ static void route_mac(node_t *source, vpn_packet_t *packet) {
+@@ -955,9 +955,19 @@
  	/* Lookup destination address */
  
  	memcpy(&dest, &packet->data[0], sizeof dest);
@@ -40,14 +39,13 @@ index 5782c56..d04b751 100644
 +				return;
 +			}
 +		}
- 		broadcast_packet(source, packet);
+ 		route_broadcast(source, packet);
  		return;
  	}
-diff --git a/src/subnet.c b/src/subnet.c
-index 89e37e6..0afe566 100644
+diff -rNuw a/src/subnet.c b/src/subnet.c
 --- a/src/subnet.c
 +++ b/src/subnet.c
-@@ -441,16 +441,17 @@ subnet_t *lookup_subnet(const node_t *owner, const subnet_t *subnet) {
+@@ -417,16 +417,17 @@
  	return avl_search(owner->subnet_tree, subnet);
  }
  
@@ -68,11 +66,10 @@ index 89e37e6..0afe566 100644
  		if(!cache_mac_valid[i] && min_lru != 0) {
  			min_lru = 0;
  			cache_mac_slot = i;
-diff --git a/src/subnet.h b/src/subnet.h
-index bed6919..49a8985 100644
+diff -rNuw a/src/subnet.h b/src/subnet.h
 --- a/src/subnet.h
 +++ b/src/subnet.h
-@@ -80,7 +80,7 @@ extern void subnet_update(struct node_t *, subnet_t *, bool);
+@@ -80,7 +80,7 @@
  extern bool net2str(char *, int, const subnet_t *);
  extern bool str2net(subnet_t *, const char *);
  extern subnet_t *lookup_subnet(const struct node_t *, const subnet_t *);
@@ -81,6 +78,3 @@ index bed6919..49a8985 100644
  extern subnet_t *lookup_subnet_ipv4(const ipv4_t *);
  extern subnet_t *lookup_subnet_ipv6(const ipv6_t *);
  extern void dump_subnets(void);
--- 
-1.9.1
-
