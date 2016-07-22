@@ -20,6 +20,15 @@ PKG_BUILD_DEPENDS:=libpcre libreadline
 
 include $(INCLUDE_DIR)/package.mk
 
+TARGET_CFLAGS += \
+	-std=gnu89
+
+TARGET_CXXFLAGS += \
+	-std=gnu89
+
+TARGET_CPPFLAGS += \
+	-std=gnu89
+
 define Package/atftp/Default
   SECTION:=net
   CATEGORY:=Network
