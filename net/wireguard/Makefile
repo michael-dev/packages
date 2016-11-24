@@ -9,12 +9,12 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=wireguard
 
-PKG_VERSION:=0.0.20160711
+PKG_VERSION:=0.0.20161116.1
 PKG_RELEASE:=1
 
 PKG_SOURCE:=WireGuard-experimental-$(PKG_VERSION).tar.xz
 # This is actually SHA256, but OpenWRT/LEDE will figure it out based on the length
-PKG_MD5SUM:=4ab876642236abcac416f7b75cf5e9e28b8581d5b7741d36a437af08c42d8081
+PKG_MD5SUM:=730d9d919e1942cf83e59dcb8c6ee6ac6696c62ce363c4802474774a5db8238d
 PKG_SOURCE_URL:=https://git.zx2c4.com/WireGuard/snapshot/
 PKG_BUILD_DIR:=$(BUILD_DIR)/WireGuard-experimental-$(PKG_VERSION)
 
@@ -59,7 +59,7 @@ include $(INCLUDE_DIR)/package-defaults.mk
 MAKE_PATH:=src/tools
 
 define Build/Compile
-	$(MAKE) $(KERNEL_MAKEOPTS) SUBDIRS="$(PKG_BUILD_DIR)/src" modules
+	$(MAKE) $(KERNEL_MAKEOPTS) M="$(PKG_BUILD_DIR)/src" modules
 	$(call Build/Compile/Default)
 endef
 
@@ -70,18 +70,21 @@ endef
 define Package/wireguard-tools
   $(call Package/wireguard/Default)
   TITLE:=Wireguard userspace control program (wg)
-  DEPENDS:=+libmnl
+  DEPENDS:=+libmnl +resolveip
 endef
 
 define Package/wireguard-tools/description
   $(call Package/wireguard/Default/description)
 
-  This package provides the userspace control program for wireguard: `wg`.
+  This package provides the userspace control program for wireguard, `wg`,
+  and a netifd protocol helper.
 endef
 
 define Package/wireguard-tools/install
 	$(INSTALL_DIR) $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/tools/wg $(1)/usr/bin/
+	$(INSTALL_DIR) $(1)/lib/netifd/proto/
+	$(INSTALL_BIN) ./files/wireguard.sh $(1)/lib/netifd/proto/
 endef
 
 define KernelPackage/wireguard
