@@ -1,5 +1,7 @@
 #
+# Copyright (C) 2016-2017 Jason A. Donenfeld <Jason@zx2c4.com>
 # Copyright (C) 2016 Baptiste Jonglez <openwrt@bitsofnetworks.org>
+# Copyright (C) 2016-2017 Dan Luedtke <mail@danrl.com>
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -9,20 +11,19 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=wireguard
 
-PKG_VERSION:=0.0.20161116.1
+PKG_VERSION:=0.0.20170320
 PKG_RELEASE:=1
 
-PKG_SOURCE:=WireGuard-experimental-$(PKG_VERSION).tar.xz
-# This is actually SHA256, but OpenWRT/LEDE will figure it out based on the length
-PKG_MD5SUM:=730d9d919e1942cf83e59dcb8c6ee6ac6696c62ce363c4802474774a5db8238d
+PKG_SOURCE:=WireGuard-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=https://git.zx2c4.com/WireGuard/snapshot/
-PKG_BUILD_DIR:=$(BUILD_DIR)/WireGuard-experimental-$(PKG_VERSION)
+PKG_HASH:=9b9d544c2abae29b342d3befc94efba4ca096bf407aa8347ae89534121dd42cc
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
 
-PKG_USE_MIPS16:=0
+PKG_BUILD_DIR:=$(BUILD_DIR)/WireGuard-$(PKG_VERSION)
 PKG_BUILD_PARALLEL:=1
+PKG_USE_MIPS16:=0
 
 # Wireguard's makefile needs this to know where to build the kernel module
 export KERNELDIR:=$(LINUX_DIR)
@@ -32,8 +33,11 @@ include $(INCLUDE_DIR)/package.mk
 define Package/wireguard/Default
   SECTION:=net
   CATEGORY:=Network
+  SUBMENU:=VPN
   URL:=https://www.wireguard.io
-  MAINTAINER:=Baptiste Jonglez <openwrt@bitsofnetworks.org>
+  MAINTAINER:=Baptiste Jonglez <openwrt@bitsofnetworks.org>, \
+              Dan Luedtke <mail@danrl.com>, \
+              Jason A. Donenfeld <Jason@zx2c4.com>
 endef
 
 define Package/wireguard/Default/description
@@ -63,6 +67,10 @@ define Build/Compile
 	$(call Build/Compile/Default)
 endef
 
+define Package/wireguard/install
+  true
+endef
+
 define Package/wireguard/description
   $(call Package/wireguard/Default/description)
 endef
@@ -70,7 +78,7 @@ endef
 define Package/wireguard-tools
   $(call Package/wireguard/Default)
   TITLE:=Wireguard userspace control program (wg)
-  DEPENDS:=+libmnl +resolveip
+  DEPENDS:=+libmnl
 endef
 
 define Package/wireguard-tools/description
@@ -92,9 +100,9 @@ define KernelPackage/wireguard
   CATEGORY:=Kernel modules
   SUBMENU:=Network Support
   TITLE:=Wireguard kernel module
-  DEPENDS:=@IPV6 +kmod-udptunnel4 +kmod-udptunnel6 +kmod-ipt-hashlimit
+  DEPENDS:=+IPV6:kmod-udptunnel6 +kmod-udptunnel4 +kmod-ipt-hashlimit
   FILES:= $(PKG_BUILD_DIR)/src/wireguard.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,33,wireguard)
+  AUTOLOAD:=$(call AutoProbe,wireguard)
 endef
 
 define KernelPackage/wireguard/description

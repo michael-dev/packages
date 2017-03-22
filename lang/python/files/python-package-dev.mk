@@ -8,13 +8,13 @@
 define Package/python-dev
 $(call Package/python/Default)
   TITLE:=Python $(PYTHON_VERSION) development files
-  DEPENDS:=+python
+  DEPENDS:=+python +python-lib2to3
 endef
 
 define PyPackage/python-dev/install
-	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_DIR) $(1)/usr/bin $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/bin/python*config $(1)/usr/bin
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libpython$(PYTHON_VERSION).so* $(1)/usr/lib
+	$(CP) $(PKG_INSTALL_DIR)/usr/lib/python$(PYTHON_VERSION)/config/libpython$(PYTHON_VERSION).a $(1)/usr/lib
 endef
 
 $(eval $(call PyBasePackage,python-dev, \

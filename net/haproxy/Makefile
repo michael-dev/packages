@@ -9,12 +9,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=haproxy
-PKG_VERSION:=1.6.9
-PKG_RELEASE:=31
+PKG_VERSION:=1.7.3
+PKG_RELEASE:=07
 
 PKG_SOURCE:=haproxy-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=http://haproxy.1wt.eu/download/1.6/src/
-PKG_MD5SUM:=c52eee40eb66f290d6f089c339b9d2b3
+PKG_SOURCE_URL:=http://haproxy.1wt.eu/download/1.7/src/
+PKG_MD5SUM:=e529c240c08e4004c6e9dcf3fd6b3ab
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_LICENSE:=GPL-2.0
@@ -51,7 +51,7 @@ define Package/haproxy/Default/description
 endef
 
 define Package/haproxy
-  DEPENDS+= +libpcre +libltdl +zlib +libpthread +libopenssl +ncurses +libreadline +@OPENSSL_WITH_DEPRECATED +@OPENSSL_WITH_EC +@OPENSSL_WITH_EC2M  +@OPENSSL_WITH_DTLS +@OPENSSL_WITH_COMPRESSION +@OPENSSL_WITH_NPN  +@OPENSSL_WITH_PSK +@OPENSSL_WITH_SRP +@OPENSSL_ENGINE_DIGEST +@OPENSSL_ENGINE_CRYPTO
+  DEPENDS+= +libpcre +libltdl +zlib +libpthread +libopenssl +libncursesw +libreadline +@OPENSSL_WITH_DEPRECATED +@OPENSSL_WITH_EC +@OPENSSL_WITH_EC2M  +@OPENSSL_WITH_DTLS +@OPENSSL_WITH_COMPRESSION +@OPENSSL_WITH_NPN  +@OPENSSL_WITH_PSK +@OPENSSL_WITH_SRP +@OPENSSL_ENGINE_DIGEST +@OPENSSL_ENGINE_CRYPTO
 
   TITLE+= (with SSL support)
   VARIANT:=ssl
@@ -120,16 +120,16 @@ define Build/Compile
 	$(MAKE) TARGET=$(LINUX_TARGET) -C $(PKG_BUILD_DIR) \
 		DESTDIR="$(PKG_INSTALL_DIR)" \
 		CC="$(TARGET_CC)" \
+		PCREDIR="$(STAGING_DIR)/usr/include" \
+		SMALL_OPTS="-DBUFSIZE=16384 -DMAXREWRITE=1030 -DSYSTEM_MAXCONN=165530 " \
+		USE_LINUX_TPROXY=1 USE_LINUX_SPLICE=1 USE_REGPARM=1 \
+		USE_ZLIB=yes USE_PCRE=1 USE_PCRE_JIT=1\
+		VERSION="$(PKG_VERSION)-patch$(PKG_RELEASE)" \
 		$(ADDON)
 		CFLAGS="$(TARGET_CFLAGS) -fno-align-jumps -fno-align-functions -fno-align-labels -fno-align-loops -pipe -fomit-frame-pointer -fhonour-copts" \
 		LD="$(TARGET_LD)" \
 		LDFLAGS="$(TARGET_LDFLAGS) -lcurses -lreadline" \
-		PCREDIR="$(STAGING_DIR)/usr/include" \
-		SMALL_OPTS="-DBUFSIZE=16384 -DMAXREWRITE=1030 -DSYSTEM_MAXCONN=165530 " \
-		USE_LINUX_TPROXY=1 USE_LINUX_SPLICE=1 USE_REGPARM=1 \
-		USE_ZLIB=yes USE_PCRE=1 \
-		VERSION="$(PKG_VERSION)-patch$(PKG_RELEASE)" \
-		IGNOREGIT=1
+		GNOREGIT=1
 
 	$(MAKE_VARS) $(MAKE) -C $(PKG_BUILD_DIR) \
 		DESTDIR="$(PKG_INSTALL_DIR)" \

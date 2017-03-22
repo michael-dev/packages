@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright 2016 Dan Luedtke <mail@danrl.com>
+# Copyright 2016-2017 Dan Luedtke <mail@danrl.com>
 # Licensed to the public under the Apache License 2.0.
 
 
@@ -22,6 +22,7 @@ proto_wireguard_init_config() {
   proto_config_add_int    "listen_port"
   proto_config_add_int    "mtu"
   proto_config_add_string "preshared_key"
+  proto_config_add_string "fwmark"
   available=1
   no_proto_task=1
 }
@@ -83,27 +84,6 @@ proto_wireguard_setup_peer() {
       esac
     done
   fi
-
-  #### FEATURE DISABLED
-  # proto_add_host_dependency() has failed with IPv6 addresses during tests.
-  # Endpoint dependency feature is disabled until the issue is fixed.
-  ####
-  #  # endpoint dependency
-  #  if [ "${endpoint_host}" ]; then
-  #    endpoint_dependency=0
-  #    for ip in $(resolveip -t 10 "${endpoint_host}"); do
-  #      echo "adding host depedency for ${ip} at ${config}"
-  #      proto_add_host_dependency "${config}" "${ip}"
-  #      endpoint_dependency=1
-  #    done
-  #    if [ ${endpoint_dependency} -eq 0 ]; then
-  #      echo "error resolving ${endpoint_host}!"
-  #      sleep 5
-  #      proto_setup_failed "${config}"
-  #      exit 1
-  #    fi
-  #  fi
-  ####
 }
 
 
@@ -121,8 +101,10 @@ proto_wireguard_setup() {
   config_load network
   config_get private_key   "${config}" "private_key"
   config_get listen_port   "${config}" "listen_port"
+  config_get addresses     "${config}" "addresses"
   config_get mtu           "${config}" "mtu"
   config_get preshared_key "${config}" "preshared_key"
+  config_get fwmark        "${config}" "fwmark"
 
   # create interface
   ip link del dev "${config}" 2>/dev/null
@@ -145,6 +127,9 @@ proto_wireguard_setup() {
   if [ "${preshared_key}" ]; then
     echo "PresharedKey=${preshared_key}" >> "${wg_cfg}"
   fi
+  if [ "${fwmark}" ]; then
+    echo "FwMark=${fwmark}" >> "${wg_cfg}"
+  fi
   config_foreach proto_wireguard_setup_peer "wireguard_${config}"
 
   # apply configuration file
@@ -160,6 +145,33 @@ proto_wireguard_setup() {
     proto_setup_failed "${config}"
     exit 1
   fi
+
+  # add ip addresses
+  for address in ${addresses}; do
+    case "${address}" in
+      *:*/*)
+        proto_add_ipv6_address "${address%%/*}" "${address##*/}"
+      ;;
+      *.*/*)
+        proto_add_ipv4_address "${address%%/*}" "${address##*/}"
+      ;;
+      *:*)
+        proto_add_ipv6_address "${address%%/*}" "128"
+      ;;
+      *.*)
+        proto_add_ipv4_address "${address%%/*}" "32"
+      ;;
+    esac
+  done
+
+  # endpoint dependency
+  wg show "${config}" endpoints | \
+    sed -E 's/\[?([0-9.:a-f]+)\]?:([0-9]+)/\1 \2/' | \
+    while IFS=$'\t ' read -r key address port; do
+    [ -n "${port}" ] || continue
+    echo "adding host depedency for ${address} at ${config}"
+    proto_add_host_dependency "${config}" "${address}"
+  done
 
   proto_send_update "${config}"
 }
