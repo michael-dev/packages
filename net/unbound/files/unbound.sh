@@ -14,9 +14,12 @@
 #
 ##############################################################################
 #
-# This builds the basic UCI components currently supported for Unbound. It is
-# intentionally NOT comprehensive and bundles a lot of options. The UCI is to
-# be a simpler presentation of the total Unbound conf set.
+# Unbound is a full featured recursive server with many options. The UCI
+# provided tries to simplify and bundle options. This should make Unbound
+# easier to deploy. Even light duty routers may resolve recursively instead of
+# depending on a stub with the ISP. The UCI also attempts to replicate dnsmasq
+# features as used in base LEDE/OpenWrt. If there is a desire for more
+# detailed tuning, then manual conf file overrides are also made available.
 #
 ##############################################################################
 
@@ -36,6 +39,7 @@ UNBOUND_B_QRY_MINST=0
 
 UNBOUND_D_DOMAIN_TYPE=static
 UNBOUND_D_DHCP_LINK=none
+UNBOUND_D_EXTRA_DNS=0
 UNBOUND_D_LAN_FQDN=0
 UNBOUND_D_PROTOCOL=mixed
 UNBOUND_D_RESOURCE=small
@@ -57,6 +61,11 @@ UNBOUND_TXT_HOSTNAME=thisrouter
 
 ##############################################################################
 
+# keep track of local-domain: assignments during inserted resource records
+UNBOUND_LIST_DOMAINS=""
+
+##############################################################################
+
 UNBOUND_LIBDIR=/usr/lib/unbound
 UNBOUND_VARDIR=/var/lib/unbound
 
@@ -69,7 +78,7 @@ UNBOUND_CONFFILE=$UNBOUND_VARDIR/unbound.conf
 
 UNBOUND_KEYFILE=$UNBOUND_VARDIR/root.key
 UNBOUND_HINTFILE=$UNBOUND_VARDIR/root.hints
-UNBOUND_TIMEFILE=$UNBOUND_VARDIR/unbound.time
+UNBOUND_TIMEFILE=$UNBOUND_VARDIR/hotplug.time
 
 ##############################################################################
 
@@ -124,8 +133,8 @@ create_interface_dns() {
 
   ifdashname="${ifname//./-}"
   ipcommand="ip -o address show $ifname"
-  addresses="$($ipcommand | awk '/inet/{sub(/\/.*/,"",$4); print $4}')"
-  ulaprefix="$(uci_get network @globals[0] ula_prefix)"
+  addresses=$( $ipcommand | awk '/inet/{sub(/\/.*/,"",$4); print $4}' )
+  ulaprefix=$( uci_get network.@globals[0].ula_prefix )
   host_fqdn="$UNBOUND_TXT_HOSTNAME.$UNBOUND_TXT_DOMAIN"
   if_fqdn="$ifdashname.$host_fqdn"
 
@@ -223,6 +232,135 @@ create_interface_dns() {
 
 ##############################################################################
 
+create_local_zone() {
+  local target="$1"
+  local partial domain found
+
+
+  if [ -n "$UNBOUND_LIST_DOMAINS" ] ; then
+    for domain in $UNBOUND_LIST_DOMAINS ; do
+      case $target in
+      *"${domain}")
+        found=1
+        break
+        ;;
+
+      [A-Za-z0-9]*.[A-Za-z0-9]*)
+        found=0
+        ;;
+
+      *) # no dots
+        found=1
+        break
+        ;;
+      esac
+    done
+  else
+    found=0
+  fi
+
+
+  if [ $found -eq 0 ] ; then
+    # New Zone! Bundle local-zones: by first two name tiers "abcd.tld."
+    partial=$( echo "$target" | awk -F. '{ j=NF ; i=j-1; print $i"."$j }' )
+    UNBOUND_LIST_DOMAINS="$UNBOUND_LIST_DOMAINS $partial"
+    echo "  local-zone: $partial. transparent" >> $UNBOUND_CONFFILE
+  fi
+}
+
+##############################################################################
+
+create_host_record() {
+  local cfg="$1"
+  local ip name
+
+  # basefiles dhcp "domain" clause which means host A, AAAA, and PRT record
+  config_get ip   "$cfg" ip
+  config_get name "$cfg" name
+
+
+  if [ -n "$name" -a -n "$ip" ] ; then
+    create_local_zone "$name"
+
+    {
+      case $ip in
+      fe80:*|169.254.*)
+        echo "  # note link address $ip for host $name"
+        ;;
+
+      [1-9a-f]*:*[0-9a-f])
+        echo "  local-data: \"$name. 120 IN AAAA $ip\""
+        echo "  local-data-ptr: \"$ip 120 $name\""
+        ;;
+
+      [1-9]*.*[0-9])
+        echo "  local-data: \"$name. 120 IN A $ip\""
+        echo "  local-data-ptr: \"$ip 120 $name\""
+        ;;
+      esac
+    } >> $UNBOUND_CONFFILE
+  fi
+}
+
+##############################################################################
+
+create_mx_record() {
+  local cfg="$1"
+  local domain relay pref
+
+  # Insert a static MX record
+  config_get domain "$cfg" domain
+  config_get relay  "$cfg" relay
+  config_get pref   "$cfg" pref 10
+
+
+  if [ -n "$domain" -a -n "$relay" ] ; then
+    create_local_zone "$domain"
+    echo "  local-data: \"$domain. 120 IN MX $pref $relay.\"" \
+          >> $UNBOUND_CONFFILE
+  fi
+}
+
+##############################################################################
+
+create_srv_record() {
+  local cfg="$1"
+  local srv target port class weight
+
+  # Insert a static SRV record such as SIP server
+  config_get srv    "$cfg" srv
+  config_get target "$cfg" target
+  config_get port   "$cfg" port
+  config_get class  "$cfg" class 10
+  config_get weight "$cfg" weight 10
+
+
+  if [ -n "$srv" -a -n "$target" -a -n "$port" ] ; then
+    create_local_zone "$srv"
+    echo "  local-data: \"$srv. 120 IN SRV $class $weight $port $target.\"" \
+          >> $UNBOUND_CONFFILE
+  fi
+}
+
+##############################################################################
+
+create_cname_record() {
+  local cfg="$1"
+  local cname target
+
+  # Insert static CNAME record
+  config_get cname  "$cfg" cname
+  config_get target "$cfg" target
+
+
+  if [ -n "$cname" -a -n "$target" ] ; then
+    create_local_zone "$cname"
+    echo "  local-data: \"$cname. 120 IN CNAME $target.\"" >> $UNBOUND_CONFFILE
+  fi
+}
+
+##############################################################################
+
 create_access_control() {
   local cfg="$1"
   local subnets subnets4 subnets6
@@ -256,30 +394,9 @@ create_domain_insecure() {
 ##############################################################################
 
 unbound_mkdir() {
-  local resolvsym=0
-  local dhcp_origin=$( uci get dhcp.@odhcpd[0].leasefile )
-  local dhcp_dir=$( dirname "$dhcp_origin" )
+  local dhcp_origin=$( uci_get dhcp.@odhcpd[0].leasefile )
+  local dhcp_dir=$( dirname $dhcp_origin )
   local filestuff
-
-
-  if [ ! -x /usr/sbin/dnsmasq -o ! -x /etc/init.d/dnsmasq ] ; then
-    resolvsym=1
-  else
-    /etc/init.d/dnsmasq enabled || resolvsym=1
-  fi
-
-
-  if [ "$resolvsym" -gt 0 ] ; then
-    rm -f /tmp/resolv.conf
-
-
-    {
-      # Set resolver file to local but not if /etc/init.d/dnsmasq will do it.
-      echo "nameserver 127.0.0.1"
-      echo "nameserver ::1"
-      echo "search $UNBOUND_TXT_DOMAIN"
-    } > /tmp/resolv.conf
-  fi
 
 
   if [ "$UNBOUND_D_DHCP_LINK" = "odhcpd" -a ! -d "$dhcp_dir" ] ; then
@@ -315,7 +432,7 @@ unbound_mkdir() {
       # Debian-like package dns-root-data
       cp -p /usr/share/dns/root.hints $UNBOUND_HINTFILE
 
-    else
+    elif [ ! -f "$UNBOUND_TIMEFILE" ] ; then
       logger -t unbound -s "iterator will use built-in root hints"
     fi
   fi
@@ -329,7 +446,7 @@ unbound_mkdir() {
     elif [ -x $UNBOUND_ANCHOR ] ; then
       $UNBOUND_ANCHOR -a $UNBOUND_KEYFILE
 
-    else
+    elif [ ! -f "$UNBOUND_TIMEFILE" ] ; then
       logger -t unbound -s "validator will use built-in trust anchor"
     fi
   fi
@@ -526,7 +643,7 @@ unbound_conf() {
       echo
     } >> $UNBOUND_CONFFILE
 
-  else
+  elif [ ! -f "$UNBOUND_TIMEFILE" ] ; then
     logger -t unbound -s "default memory resource consumption"
   fi
 
@@ -602,7 +719,9 @@ unbound_conf() {
       ;;
 
     *)
-      logger -t unbound -s "default recursion configuration"
+      if [ ! -f "$UNBOUND_TIMEFILE" ] ; then
+        logger -t unbound -s "default recursion configuration"
+      fi
       ;;
   esac
 
@@ -778,11 +897,35 @@ unbound_hostname() {
 
 ##############################################################################
 
+unbound_records() {
+  if [ "$UNBOUND_D_EXTRA_DNS" -gt 0 ] ; then
+    # Parasite from the uci.dhcp.domain clauses
+    config_load dhcp
+    config_foreach create_host_record domain
+  fi
+
+
+  if [ "$UNBOUND_D_EXTRA_DNS" -gt 1 ] ; then
+    config_foreach create_srv_record srvhost
+    config_foreach create_mx_record mxhost
+  fi
+
+
+  if [ "$UNBOUND_D_EXTRA_DNS" -gt 2 ] ; then
+    config_foreach create_cname_record cname
+  fi
+
+
+  echo >> $UNBOUND_CONFFILE
+}
+
+##############################################################################
+
 unbound_uci() {
   local cfg="$1"
   local dnsmasqpath hostnm
 
-  hostnm="$(uci_get system.@system[0].hostname | awk '{print tolower($0)}')"
+  hostnm=$( uci_get system.@system[0].hostname | awk '{print tolower($0)}' )
   UNBOUND_TXT_HOSTNAME=${hostnm:-thisrouter}
 
   config_get_bool UNBOUND_B_SLAAC6_MAC "$cfg" dhcp4_slaac6 0
@@ -806,6 +949,7 @@ unbound_uci() {
 
   config_get UNBOUND_D_DOMAIN_TYPE "$cfg" domain_type static
   config_get UNBOUND_D_DHCP_LINK   "$cfg" dhcp_link none
+  config_get UNBOUND_D_EXTRA_DNS   "$cfg" add_extra_dns 0
   config_get UNBOUND_D_LAN_FQDN    "$cfg" add_local_fqdn 0
   config_get UNBOUND_D_PROTOCOL    "$cfg" protocol mixed
   config_get UNBOUND_D_RECURSION   "$cfg" recursion passive
@@ -815,6 +959,7 @@ unbound_uci() {
   config_get UNBOUND_TTL_MIN     "$cfg" ttl_min 120
   config_get UNBOUND_TXT_DOMAIN  "$cfg" domain lan
 
+  UNBOUND_LIST_DOMAINS="nowhere $UNBOUND_TXT_DOMAIN"
 
   if [ "$UNBOUND_D_DHCP_LINK" = "none" ] ; then
     config_get_bool UNBOUND_B_DNSMASQ   "$cfg" dnsmasq_link_dns 0
@@ -822,7 +967,11 @@ unbound_uci() {
 
     if [ "$UNBOUND_B_DNSMASQ" -gt 0 ] ; then
       UNBOUND_D_DHCP_LINK=dnsmasq
-      logger -t unbound -s "Please use 'dhcp_link' selector instead"
+
+
+      if [ ! -f "$UNBOUND_TIMEFILE" ] ; then
+        logger -t unbound -s "Please use 'dhcp_link' selector instead"
+      fi
     fi
   fi
 
@@ -835,7 +984,7 @@ unbound_uci() {
     fi
 
 
-    if [ "$UNBOUND_D_DHCP_LINK" = "none" ] ; then
+    if [ "$UNBOUND_D_DHCP_LINK" = "none" -a ! -f "$UNBOUND_TIMEFILE" ] ; then
       logger -t unbound -s "cannot forward to dnsmasq"
     fi
   fi
@@ -849,7 +998,7 @@ unbound_uci() {
     fi
 
 
-    if [ "$UNBOUND_D_DHCP_LINK" = "none" ] ; then
+    if [ "$UNBOUND_D_DHCP_LINK" = "none" -a ! -f "$UNBOUND_TIMEFILE" ] ; then
       logger -t unbound -s "cannot receive records from odhcpd"
     fi
   fi
@@ -857,22 +1006,62 @@ unbound_uci() {
 
   if [ "$UNBOUND_N_EDNS_SIZE" -lt 512 \
     -o 4096 -lt "$UNBOUND_N_EDNS_SIZE" ] ; then
-    # exceeds range, back to default
+    logger -t unbound -s "edns_size exceeds range, using default"
     UNBOUND_N_EDNS_SIZE=1280
   fi
 
 
-  if [ "$UNBOUND_N_RX_PORT" -lt 1024 \
-    -o 10240 -lt "$UNBOUND_N_RX_PORT" ] ; then
-    # special port or in 5 digits, back to default
+  if [ "$UNBOUND_N_RX_PORT" -ne 53 ] \
+  && [ "$UNBOUND_N_RX_PORT" -lt 1024 -o 10240 -lt "$UNBOUND_N_RX_PORT" ] ; then
+    logger -t unbound -s "privileged port or in 5 digits, using default"
     UNBOUND_N_RX_PORT=53
   fi
 
 
   if [ "$UNBOUND_TTL_MIN" -gt 1800 ] ; then
-    # that could have had awful side effects
+    logger -t unbound -s "ttl_min could have had awful side effects, using 300"
     UNBOUND_TTL_MIN=300
   fi
+}
+
+##############################################################################
+
+_resolv_setup() {
+  if [ "$UNBOUND_N_RX_PORT" != "53" ] ; then
+    return
+  fi
+
+  if [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq enabled \
+  && nslookup localhost 127.0.0.1#53 >/dev/null 2>&1 ; then
+    # unbound is configured for port 53, but dnsmasq is enabled and a resolver
+    #   listens on localhost:53, lets assume dnsmasq manages the resolver file.
+    # TODO:
+    #   really check if dnsmasq runs a local (main) resolver in stead of using
+    #   nslookup that times out when no resolver listens on localhost:53.
+    return
+  fi
+
+  # unbound is designated to listen on 127.0.0.1#53,
+  #   set resolver file to local.
+  rm -f /tmp/resolv.conf
+  {
+    echo "# /tmp/resolv.conf generated by Unbound UCI $( date )"
+    echo "nameserver 127.0.0.1"
+    echo "nameserver ::1"
+    echo "search $UNBOUND_TXT_DOMAIN"
+  } > /tmp/resolv.conf
+}
+
+##############################################################################
+
+_resolv_teardown() {
+  case $( cat /tmp/resolv.conf ) in
+  *"generated by Unbound UCI"*)
+    # our resolver file, reset to auto resolver file.
+    rm -f /tmp/resolv.conf
+    ln -s /tmp/resolv.conf.auto /tmp/resolv.conf
+    ;;
+  esac
 }
 
 ##############################################################################
@@ -880,6 +1069,8 @@ unbound_uci() {
 unbound_start() {
   config_load unbound
   config_foreach unbound_uci unbound
+
+
   unbound_mkdir
 
 
@@ -892,32 +1083,23 @@ unbound_start() {
       dnsmasq_link
     else
       unbound_hostname
+      unbound_records
     fi
 
     unbound_control
   fi
+
+
+  _resolv_setup
 }
 
 ##############################################################################
 
 unbound_stop() {
-  local resolvsym=0
+  _resolv_teardown
+
 
   rootzone_update
-
-
-  if [ ! -x /usr/sbin/dnsmasq -o ! -x /etc/init.d/dnsmasq ] ; then
-    resolvsym=1
-  else
-    /etc/init.d/dnsmasq enabled || resolvsym=1
-  fi
-
-
-  if [ "$resolvsym" -gt 0 ] ; then
-    # set resolver file to normal, but don't stomp on dnsmasq
-    rm -f /tmp/resolv.conf
-    ln -s /tmp/resolv.conf.auto /tmp/resolv.conf
-  fi
 }
 
 ##############################################################################
