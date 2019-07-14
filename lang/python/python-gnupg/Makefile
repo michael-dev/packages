@@ -5,31 +5,29 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-gnupg
-PKG_VERSION:=2.3.0
+PKG_VERSION:=0.4.4
 PKG_RELEASE:=1
 
-PKG_SOURCE_NAME:=gnupg
-PKG_SOURCE:=$(PKG_SOURCE_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://pypi.python.org/packages/fa/ea/58e0415e1e3c3a0649119158e036ca4a9af154c56ef80f3d6de986bf9cb2/
-PKG_MD5SUM:=b6ebde86093f262f8430eff8d8a4c82b
-PKG_HASH:=1d90e854dcc7790a7efc3aac5998159553cc34ec599ee2bc7927beb45fb564ec
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/p/python-gnupg
+PKG_HASH:=45daf020b370bda13a1429c859fcdff0b766c0576844211446f9266cae97fb0e
 
 PKG_LICENSE:=GPL-3.0+
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-$(PKG_SOURCE_NAME)-$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-$(PKG_NAME)-$(PKG_VERSION)
 PKG_UNPACK=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
 
 include $(INCLUDE_DIR)/package.mk
-$(call include_mk, python-package.mk)
-$(call include_mk, python3-package.mk)
+include ../python-package.mk
+include ../python3-package.mk
 
 define Package/python-gnupg/Default
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
-  URL:=https://github.com/isislovecruft/python-gnupg
+  URL:=https://gnupg.readthedocs.io/en/latest/
   DEPENDS:=+gnupg
 endef
 
@@ -64,6 +62,19 @@ $(call Package/python-gnupg/description)
 
 (Variant for Python3)
 endef
+
+define PyBuild/Compile
+	$(call Build/Compile/PyMod,,\
+		install --prefix="/usr" --root="$(PKG_INSTALL_DIR)" \
+	)
+endef
+
+define Py3Build/Compile
+	$(call Build/Compile/Py3Mod,,\
+		install --prefix="/usr" --root="$(PKG_INSTALL_DIR)" \
+	)
+endef
+
 
 $(eval $(call PyPackage,python-gnupg))
 $(eval $(call BuildPackage,python-gnupg))

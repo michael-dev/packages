@@ -1,19 +1,13 @@
-#
-# Copyright (C) 2009-2016 OpenWrt.org
-#
-# This is free software, licensed under the GNU General Public License v2.
-# See /LICENSE for more information.
-#
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tmux
-PKG_VERSION:=2.5
+PKG_VERSION:=2.9a
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/tmux/tmux/releases/download/$(PKG_VERSION)
-PKG_HASH:=ae135ec37c1bf6b7750a84e3a35e93d91033a806943e034521c8af51b12d95df
+PKG_HASH:=839d167a4517a6bffa6b6074e89a9a8630547b2dea2086f1fad15af12ab23b25
 PKG_MAINTAINER:=Maxim Storchak <m.storchak@gmail.com>
 
 PKG_LICENSE:=ISC
@@ -36,6 +30,10 @@ endef
 
 define Package/tmux/description
   tmux is a modern, BSD-licensed alternative to GNU screen.
+endef
+
+define Package/tmux/conffiles
+/etc/tmux.conf
 endef
 
 define Package/tmux/install

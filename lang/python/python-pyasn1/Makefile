@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 OpenWrt.org
+# Copyright (C) 2015-2018 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-pyasn1
-PKG_VERSION:=0.3.2
+PKG_VERSION:=0.4.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=pyasn1-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://pypi.python.org/packages/17/a2/266818077dbd002d53ebe5aaaa05a04786256cea8dba1899ac0b832ef028
-PKG_HASH:=90bd82e0db59d4319eaf01c2549b34c817d645275fce9ad41bac7429aa380690
+PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/p/pyasn1
+PKG_HASH:=da2420fe13a9452d8ae97a0e478adde1dee153b11ba832a95b223a2ba01c10f7
 
 PKG_LICENSE:=BSD-2-Clause
 PKG_LICENSE_FILES:=LICENSE.txt
@@ -22,8 +22,8 @@ PKG_MAINTAINER:=Jeffery To <jeffery.to@gmail.com>, Alexandru Ardelean <ardeleana
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-pyasn1-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-$(call include_mk, python-package.mk)
-$(call include_mk, python3-package.mk)
+include ../python-package.mk
+include ../python3-package.mk
 
 PKG_UNPACK:=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
 
@@ -31,19 +31,18 @@ define Package/python-pyasn1/Default
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
-  URL:=http://pyasn1.sourceforge.net/
+  TITLE:=ASN.1 library for Python
+  URL:=https://github.com/etingof/pyasn1
 endef
 
 define Package/python-pyasn1
 $(call Package/python-pyasn1/Default)
-  TITLE:=python-pyasn1
   DEPENDS:=+PACKAGE_python-pyasn1:python-light
   VARIANT:=python
 endef
 
 define Package/python3-pyasn1
 $(call Package/python-pyasn1/Default)
-  TITLE:=python3-pyasn1
   DEPENDS:=+PACKAGE_python3-pyasn1:python3-light
   VARIANT:=python3
 endef
@@ -63,5 +62,8 @@ endef
 
 $(eval $(call PyPackage,python-pyasn1))
 $(eval $(call BuildPackage,python-pyasn1))
+$(eval $(call BuildPackage,python-pyasn1-src))
+
 $(eval $(call Py3Package,python3-pyasn1))
 $(eval $(call BuildPackage,python3-pyasn1))
+$(eval $(call BuildPackage,python3-pyasn1-src))

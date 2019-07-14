@@ -1,7 +1,5 @@
 #
-# Copyright (C) 2016 OpenWrt.org
-# Copyright (C) 2012-2016 Black Roland and contributors (https://github.com/black-roland/exOpenWrt/graphs/contributors)
-# Copyright (C) 2011-2012 Entware
+# Copyright (C) 2018 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -10,18 +8,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dnscrypt-proxy
-PKG_VERSION:=1.9.5
-PKG_RELEASE:=6
+PKG_SOURCE_DATE:=2018-11-22
+PKG_SOURCE_VERSION:=f61ca76a852cf56e399a458f9e002886b1b049f0
+PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_SOURCE_URL:=http://download.dnscrypt.org/dnscrypt-proxy \
-https://github.com/jedisct1/dnscrypt-proxy/releases/download/$(PKG_VERSION)
-PKG_HASH:=e89f5b9039979ab392302faf369ef7593155d5ea21580402a75bbc46329d1bb6
-PKG_FIXUP:=autoreconf
-PKG_INSTALL:=1
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/dyne/dnscrypt-proxy
+PKG_MIRROR_HASH:=1de8d9913aea4528920dbc6fcd4769a7ab70f7c1c73abba39e68e07376cbb395
 
 PKG_MAINTAINER:=Damiano Renfer <damiano.renfer@gmail.com>
 PKG_LICENSE:=ISC
+PKG_LICENSE_FILES:=COPYING
+
+PKG_FIXUP:=autoreconf
+PKG_INSTALL:=1
+PKG_BUILD_PARALLEL:=1
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_DNSCRYPT_ENABLE_PLUGINS
 
@@ -31,8 +32,7 @@ define Package/dnscrypt-proxy/Default
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=IP Addresses and Names
-  URL:=http://dnscrypt.org/
-  MAINTAINER:=Damiano Renfer <damiano.renfer@gmail.com>
+  URL:=https://github.com/dyne/dnscrypt-proxy
 endef
 
 define Package/dnscrypt-proxy
@@ -54,7 +54,6 @@ endef
 define Package/dnscrypt-proxy-resolvers
   $(call Package/dnscrypt-proxy/Default)
   TITLE:=Package with current list of dnscrypt-proxy resolvers
-  VERSION:=$(PKG_VERSION)+git-20170530-60baef4-$(PKG_RELEASE)
 endef
 
 define Package/dnscrypt-proxy-resolvers/description

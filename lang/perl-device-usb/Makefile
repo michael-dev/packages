@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=perl-device-usb
-PKG_VERSION:=0.36
+PKG_VERSION:=0.37
 PKG_RELEASE:=1
 
-PKG_SOURCE_URL:=http://www.cpan.org/authors/id/G/GW/GWADEJ/
+PKG_SOURCE_URL:=https://www.cpan.org/authors/id/G/GW/GWADEJ/
 PKG_SOURCE:=Device-USB-$(PKG_VERSION).tar.gz
-PKG_MD5SUM:=aa91bee777f7ed7a18225a84f8795344
+PKG_HASH:=0dd58d9c627b3c539d07263a7b96e1de2adea3a4ddb118cdd45aa638f8702e49
 
 PKG_LICENSE:=GPL-1.0+ Artistic-1.0-Perl
 PKG_MAINTAINER:=Marcel Denia <naoir@gmx.net>
@@ -29,7 +29,7 @@ define Package/perl-device-usb
   SECTION:=lang
   CATEGORY:=Languages
   TITLE:=libusb library wrapper
-  URL:=http://search.cpan.org/dist/Device-USB/
+  URL:=https://search.cpan.org/dist/Device-USB/
   DEPENDS:=perl +libusb-compat +perl-inline +perl-inline-c +perlbase-essential +perlbase-test
 endef
 

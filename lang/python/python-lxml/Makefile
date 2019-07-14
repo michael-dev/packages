@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-lxml
-PKG_VERSION:=3.7.2
+PKG_VERSION:=4.3.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=lxml-$(PKG_VERSION).tgz
-PKG_SOURCE_URL:=http://lxml.de/files/
-PKG_HASH:=59d9176360dbc3919e9d4bfca85c1ca64ab4f4ee00e6f119d7150ba887e3410a
+PKG_SOURCE:=lxml-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/l/lxml
+PKG_HASH:=da5e7e941d6e71c9c9a717c93725cda0708c2474f532e3680ac5e39ec57d224d
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-lxml-$(PKG_VERSION)
 PKG_UNPACK=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
@@ -23,14 +23,14 @@ PKG_LICENSE_FILES:=LICENSES.txt
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 
 include $(INCLUDE_DIR)/package.mk
-$(call include_mk, python-package.mk)
-$(call include_mk, python3-package.mk)
+include ../python-package.mk
+include ../python3-package.mk
 
 define Package/python-lxml/Default
   SECTION:=lang
   CATEGORY:=Languages
   SUBMENU:=Python
-  URL:=http://lxml.de
+  URL:=https://lxml.de
   DEPENDS:=+libxml2 +libxslt +libexslt
 endef
 
