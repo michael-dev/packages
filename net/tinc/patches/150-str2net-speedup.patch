@@ -1,0 +1,110 @@
+Index: tinc-fem-1.0.35/src/subnet.c
+===================================================================
+--- tinc-fem-1.0.35.orig/src/subnet.c
++++ tinc-fem-1.0.35/src/subnet.c
+@@ -215,13 +215,32 @@ void subnet_del(node_t *n, subnet_t *sub
+ }
+ 
+ /* Ascii representation of subnets */
++static bool str2net_1(subnet_t *subnet, const char *subnetstr);
++static bool str2net_2(subnet_t *subnet, const char *subnetstr);
++static bool str2net_3(subnet_t *subnet, const char *subnetstr);
++static bool str2net_4(subnet_t *subnet, const char *subnetstr);
++static bool str2net_5(subnet_t *subnet, const char *subnetstr);
++static bool str2net_6(subnet_t *subnet, const char *subnetstr);
+ 
+ bool str2net(subnet_t *subnet, const char *subnetstr) {
++	static int offset = 0;
++	int i;
++	bool (*p[6])(subnet_t *, const char *) = { &str2net_1, &str2net_2, &str2net_3, &str2net_4, &str2net_5, &str2net_6 };
++
++	for (i = 0; i < 6; i++) {
++		int j = i + offset % 6;
++		if (!p[j](subnet, subnetstr)) continue;
++		offset = j;
++		return true;
++	}
++
++	return false;
++}
++
++static bool str2net_1(subnet_t *subnet, const char *subnetstr) {
+ 	int i, l;
+ 	uint16_t x[8];
+-	unsigned int vlan_id;
+ 	int weight = 10;
+-
+ 	if(sscanf(subnetstr, "%hu.%hu.%hu.%hu/%d#%d",
+ 	                &x[0], &x[1], &x[2], &x[3], &l, &weight) >= 5) {
+ 		if(l < 0 || l > 32) {
+@@ -242,7 +261,13 @@ bool str2net(subnet_t *subnet, const cha
+ 
+ 		return true;
+ 	}
++	return false;
++}
+ 
++static bool str2net_2(subnet_t *subnet, const char *subnetstr) {
++	int i, l;
++	uint16_t x[8];
++	int weight = 10;
+ 	if(sscanf(subnetstr, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx/%d#%d",
+ 	                &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &x[6], &x[7],
+ 	                &l, &weight) >= 9) {
+@@ -260,7 +285,13 @@ bool str2net(subnet_t *subnet, const cha
+ 
+ 		return true;
+ 	}
++	return false;
++}
+ 
++static bool str2net_3(subnet_t *subnet, const char *subnetstr) {
++	int i;
++	uint16_t x[8];
++	int weight = 10;
+ 	if(sscanf(subnetstr, "%hu.%hu.%hu.%hu#%d", &x[0], &x[1], &x[2], &x[3], &weight) >= 4) {
+ 		subnet->type = SUBNET_IPV4;
+ 		subnet->net.ipv4.prefixlength = 32;
+@@ -276,7 +307,13 @@ bool str2net(subnet_t *subnet, const cha
+ 
+ 		return true;
+ 	}
++	return false;
++}
+ 
++static bool str2net_4(subnet_t *subnet, const char *subnetstr) {
++	int i;
++	uint16_t x[8];
++	int weight = 10;
+ 	if(sscanf(subnetstr, "%hx:%hx:%hx:%hx:%hx:%hx:%hx:%hx#%d",
+ 	                &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &x[6], &x[7], &weight) >= 8) {
+ 		subnet->type = SUBNET_IPV6;
+@@ -289,7 +326,14 @@ bool str2net(subnet_t *subnet, const cha
+ 
+ 		return true;
+ 	}
++	return false;
++}
+ 
++static bool str2net_5(subnet_t *subnet, const char *subnetstr) {
++	int i;
++	uint16_t x[8];
++	int weight = 10;
++	unsigned int vlan_id;
+ 	if(sscanf(subnetstr, "%hx:%hx:%hx:%hx:%hx:%hx@%u#%d",
+ 			&x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &vlan_id, &weight) >= 7) {
+ 		subnet->type = SUBNET_MAC;
+@@ -303,7 +347,13 @@ bool str2net(subnet_t *subnet, const cha
+ 
+ 		return true;
+ 	}
++	return false;
++}
+ 
++static bool str2net_6(subnet_t *subnet, const char *subnetstr) {
++	int i, l;
++	uint16_t x[8];
++	int weight = 10;
+ 	// IPv6 short form
+ 	if(strstr(subnetstr, "::")) {
+ 		const char *p;
