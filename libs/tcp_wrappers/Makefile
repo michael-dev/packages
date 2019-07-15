@@ -32,7 +32,7 @@ endef
 
 TARGET_CFLAGS += $(FPIC) -Wall
 
-ifeq ($(CONFIG_USE_MUSL),)
+ifeq ($(CONFIG_LIBC_USE_UCLIBC),y)
 TARGET_EXTRA_LIBS:=LIBS=-lnsl
 endif
 
