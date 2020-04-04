@@ -9,15 +9,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hplip
-PKG_VERSION:=3.19.3
-PKG_RELEASE:=1
+PKG_VERSION:=3.19.12
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/hplip
-PKG_HASH:=a04edf0b5b4c4dcaa3998a27caad8f24513340e0aea61b694397c7807d7c2ae6
+PKG_HASH:=b7f398502fb659e0de8e54976237e3c6a64fec0b3c36054a515876f7b006b255
 
 PKG_MAINTAINER:=Luiz Angelo Daros de Luca <luizluca@gmail.com>
-PKG_LICENSE:=GPL-2.0 GPL-2.0+
+PKG_LICENSE:=GPL-2.0 GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING LICENSE
 
 PKG_BUILD_PARALLEL:=1
@@ -74,6 +74,13 @@ CONFIGURE_ARGS += \
 	--disable-cups-drv-install \
 	--enable-lite-build
 
+define Build/Install
+	mkdir -p $(PKG_INSTALL_DIR)/usr/share/sane
+	sed -n -e '/key="usb.product_id"/{s/.*int_outof="0x//;s/;0x/\n/g;s/".*//;p}' \
+		$(PKG_BUILD_DIR)/data/rules/20-hplip-devices.fdi | sort -u > \
+		$(PKG_INSTALL_DIR)/usr/share/sane/03f0-hplip.usbid
+endef
+
 define Package/hplip-common/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_BUILD_DIR)/.libs/libhpip.so* $(1)/usr/lib/
@@ -84,9 +91,6 @@ define Package/hplip-common/install
 
 	$(INSTALL_DIR) $(1)/usr/share/hplip/data/models/
 	$(CP) $(PKG_BUILD_DIR)/data/models/models.dat $(1)/usr/share/hplip/data/models/
-
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/usb/
-	$(INSTALL_BIN) ./files/20-hplip $(1)/etc/hotplug.d/usb/
 endef
 
 define Package/hplip-sane/install
@@ -95,6 +99,10 @@ define Package/hplip-sane/install
 
 	$(INSTALL_DIR) $(1)/etc/sane.d/dll.d/
 	$(INSTALL_DATA) ./files/hplib.conf $(1)/etc/sane.d/dll.d/hplib
+
+	$(INSTALL_DIR) $(1)/usr/share/sane
+	$(INSTALL_DATA) $(PKG_INSTALL_DIR)/usr/share/sane/03f0-hplip.usbid \
+		$(1)/usr/share/sane/03f0-hplip.usbid
 endef
 
 define Package/hplip-common/conffiles

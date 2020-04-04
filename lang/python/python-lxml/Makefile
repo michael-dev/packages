@@ -8,22 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=python-lxml
-PKG_VERSION:=4.3.1
+PKG_VERSION:=4.4.2
 PKG_RELEASE:=1
 
-PKG_SOURCE:=lxml-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/l/lxml
-PKG_HASH:=da5e7e941d6e71c9c9a717c93725cda0708c2474f532e3680ac5e39ec57d224d
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-lxml-$(PKG_VERSION)
-PKG_UNPACK=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
+PYPI_NAME:=lxml
+PKG_HASH:=eff69ddbf3ad86375c344339371168640951c302450c5d3e9936e98d6459db06
 
 PKG_LICENSE:=BSD
 PKG_LICENSE_FILES:=LICENSES.txt
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
+PKG_CPE_ID:=cpe:/a:lxml:lxml
 
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
 
 define Package/python-lxml/Default
@@ -34,13 +31,6 @@ define Package/python-lxml/Default
   DEPENDS:=+libxml2 +libxslt +libexslt
 endef
 
-define Package/python-lxml
-$(call Package/python-lxml/Default)
-  TITLE:=python-lxml
-  DEPENDS+=+PACKAGE_python-lxml:python-light +PACKAGE_python-lxml:python-codecs
-  VARIANT:=python
-endef
-
 define Package/python3-lxml
 $(call Package/python-lxml/Default)
   TITLE:=python3-lxml
@@ -48,31 +38,14 @@ $(call Package/python-lxml/Default)
   VARIANT:=python3
 endef
 
-define Package/python-lxml/description
+define Package/python3-lxml/description
 The lxml XML toolkit is a Pythonic binding
 for the C libraries libxml2 and libxslt.
-endef
-
-define Package/python3-lxml/description
-$(call Package/python-lxml/description)
 .
 (Variant for Python3)
 endef
 
 TARGET_LDFLAGS += -lxml2 -lxslt -lexslt
-
-define PyBuild/Compile
-	$(call Build/Compile/PyMod,, \
-		install --prefix="/usr" --root="$(PKG_INSTALL_DIR)" \
-		--static \
-		--single-version-externally-managed \
-		, \
-		INCLUDE="$(STAGING_DIR)/usr/include/ $(STAGING_DIR)/usr/include/libxml2" \
-		LIBRARY="$(STAGING_DIR)/usr/lib $(STAGING_DIR)/lib" \
-		CFLAGS="$(TARGET_CFLAGS)" \
-		LDFLAGS="$(TARGET_LDFLAGS)" \
-	)
-endef
 
 define Py3Build/Compile
 	$(call Build/Compile/Py3Mod,, \
@@ -87,8 +60,6 @@ define Py3Build/Compile
 	)
 endef
 
-$(eval $(call PyPackage,python-lxml))
-$(eval $(call BuildPackage,python-lxml))
-
 $(eval $(call Py3Package,python3-lxml))
 $(eval $(call BuildPackage,python3-lxml))
+$(eval $(call BuildPackage,python3-lxml-src))

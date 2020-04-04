@@ -9,21 +9,16 @@ PKG_NAME:=python-qrcode
 PKG_VERSION:=6.1
 PKG_RELEASE:=2
 
-PKG_SOURCE:=qrcode-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/q/qrcode/
+PYPI_NAME:=qrcode
 PKG_HASH:=505253854f607f2abf4d16092c61d4e9d511a3b4392e60bff957a68592b04369
 
 PKG_MAINTAINER:=Eneas U de Queiroz <cotequeiroz@gmail.com>
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-qrcode-$(PKG_VERSION)
-
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
-
-PKG_UNPACK:=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
 
 define Package/python-qrcode/Default
   SECTION:=lang
@@ -31,20 +26,6 @@ define Package/python-qrcode/Default
   SUBMENU:=Python
   TITLE:=QR Code image generator
   URL:=https://github.com/lincolnloop/python-qrcode
-endef
-
-define Package/python-qrcode
-$(call Package/python-qrcode/Default)
-  DEPENDS:= \
-	+PACKAGE_python-qrcode:python \
-	+PACKAGE_python-qrcode:python-setuptools \
-	+PACKAGE_python-qrcode:python-six \
-	+PACKAGE_python-qrcode:python-pillow
-  VARIANT:=python
-endef
-
-define Package/python-qrcode/description
-  Pure python QR Code generator
 endef
 
 define Package/python3-qrcode
@@ -58,14 +39,10 @@ $(call Package/python-qrcode/Default)
 endef
 
 define Package/python3-qrcode/description
-$(call Package/python-qrcode/description)
+  Pure python QR Code generator
 .
 (Variant for Python3)
 endef
-
-$(eval $(call PyPackage,python-qrcode))
-$(eval $(call BuildPackage,python-qrcode))
-$(eval $(call BuildPackage,python-qrcode-src))
 
 $(eval $(call Py3Package,python3-qrcode))
 $(eval $(call BuildPackage,python3-qrcode))

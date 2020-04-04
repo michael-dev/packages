@@ -8,18 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=perl-cgi
-PKG_VERSION:=4.42
+PKG_VERSION:=4.46
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=https://www.cpan.org/authors/id/L/LE/LEEJO
 PKG_SOURCE:=CGI-$(PKG_VERSION).tar.gz
-PKG_HASH:=11d308e7dad2312d65747a7fdec5d0c22024c28df5e882e829ca1553482024e7
+PKG_HASH:=788998ddc33ca382e5d7ce72c6c0ea1d8366c93067371fe2f14239ddea2e4298
+PKG_BUILD_DIR:=$(BUILD_DIR)/perl/CGI-$(PKG_VERSION)
 
-PKG_LICENSE:=Artistic-2.0
 PKG_MAINTAINER:=Marcel Denia <naoir@gmx.net>, \
 		Philip Prindeville <philipp@redfish-solutions.com>
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/perl/CGI-$(PKG_VERSION)
+PKG_LICENSE:=Artistic-2.0
+PKG_LICENSE_FILES:=LICENSE
 
 # don't strip comments because that will mangle this module
 PKG_LEAVE_COMMENTS:=1

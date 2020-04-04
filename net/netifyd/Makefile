@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2016-2019 eGloo, Incorporated
+# Copyright (C) 2016-2020 eGloo, Incorporated
 #
 # This is free software, licensed under the GNU General Public License v2.
 
@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=netifyd
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Darryl Sokoloski <darryl@egloo.ca>
-PKG_LICENSE:=GPL-3.0+
+PKG_LICENSE:=GPL-3.0-or-later
 
 PKG_BUILD_PARALLEL:=1
 PKG_FIXUP:=autoreconf
@@ -16,10 +16,10 @@ PKG_INSTALL:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://gitlab.com/netify.ai/public/netify-agent.git
-PKG_SOURCE_DATE:=2019-06-06
-PKG_SOURCE_VERSION:=v2.88
-#PKG_SOURCE_VERSION:=367ddd2fca4b2edd5e71145e2adea1b58f750214
-PKG_MIRROR_HASH:=8ead41dc074a71626609bced1d584f8df87e39f5ad76dcca76021c1737150089
+PKG_SOURCE_DATE:=2020-01-28
+PKG_SOURCE_VERSION:=v2.99
+#PKG_SOURCE_VERSION:=39e4fa272d8a4c83391e1b7d34cd8e071caef317
+PKG_MIRROR_HASH:=86106fc526ffcb3631ee306504874491646e7b2baa273b8e7ea8c411f83ac99d
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -28,7 +28,7 @@ define Package/netifyd
   CATEGORY:=Network
   TITLE:=Netify Agent
   URL:=http://www.netify.ai/
-  DEPENDS:=+libcurl +libmnl +libnetfilter-conntrack +libjson-c +libpcap +zlib +libpthread
+  DEPENDS:=+ca-bundle +libcurl +libmnl +libnetfilter-conntrack +libpcap +zlib +libpthread @!USE_UCLIBC
   # Explicitly depend on libstdcpp rather than $(CXX_DEPENDS).  At the moment
   # std::unordered_map is only available via libstdcpp which is required for
   # performance reasons.
@@ -47,14 +47,13 @@ define Package/netifyd/conffiles
 /etc/netifyd.conf
 endef
 
-TARGET_CFLAGS+=-ffunction-sections -fdata-sections
-TARGET_CXXFLAGS+=-ffunction-sections -fdata-sections
+TARGET_CFLAGS+=-ffunction-sections -fdata-sections -Wno-psabi
+TARGET_CXXFLAGS+=-ffunction-sections -fdata-sections -Wno-psabi
 TARGET_LDFLAGS+=-Wl,--gc-sections
 
 CONFIGURE_ARGS+= \
 	--sharedstatedir=/var/run \
 	--enable-lean-and-mean \
-	--disable-ncurses \
 	--disable-libtcmalloc \
 	--without-systemdsystemunitdir \
 	--without-tmpfilesdir

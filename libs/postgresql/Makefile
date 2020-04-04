@@ -5,10 +5,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=postgresql
-PKG_VERSION:=11.3
-PKG_RELEASE:=1
+PKG_VERSION:=12.1
+PKG_RELEASE:=2
 PKG_MAINTAINER:=Daniel Golle <daniel@makrotopia.org>
 PKG_LICENSE:=PostgreSQL
+PKG_CPE_ID:=cpe:/a:postgresql:postgresql
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=\
@@ -16,7 +17,7 @@ PKG_SOURCE_URL:=\
 	http://ftp.postgresql.org/pub/source/v$(PKG_VERSION) \
 	ftp://ftp.postgresql.org/pub/source/v$(PKG_VERSION)
 
-PKG_HASH:=2a85e082fc225944821dfd23990e32dfcd2284c19060864b0ad4ca537d30522d
+PKG_HASH:=a09bf3abbaf6763980d0f8acbb943b7629a8b20073de18d867aecdb7988483ed
 
 PKG_USE_MIPS16:=0
 PKG_FIXUP:=autoreconf
@@ -33,7 +34,7 @@ define Package/libpq
   DEPENDS:=+libpthread
   TITLE:=PostgreSQL client library
   URL:=http://www.postgresql.org/
-  SUBMENU:=database
+  SUBMENU:=Database
 endef
 
 define Package/libpq/description
@@ -46,7 +47,7 @@ define Package/pgsql-cli
   DEPENDS:=+libncursesw +libpq +libreadline +librt +zlib
   TITLE:=Command Line Interface (CLI) to PostgreSQL databases
   URL:=http://www.postgresql.org/
-  SUBMENU:=database
+  SUBMENU:=Database
 endef
 
 define Package/pgsql-cli/description
@@ -59,7 +60,7 @@ define Package/pgsql-cli-extra
   DEPENDS:=+libncursesw +libpq +libreadline +librt +zlib
   TITLE:=Command Line extras for PostgreSQL databases
   URL:=http://www.postgresql.org/
-  SUBMENU:=database
+  SUBMENU:=Database
 endef
 
 define Package/pgsql-cli-extra/description
@@ -72,7 +73,7 @@ define Package/pgsql-server
   DEPENDS:=+pgsql-cli
   TITLE:=PostgreSQL databases Server
   URL:=http://www.postgresql.org/
-  SUBMENU:=database
+  SUBMENU:=Database
   USERID:=postgres=5432:postgres=5432
 endef
 

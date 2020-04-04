@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=acme
-PKG_VERSION:=2.8.1
+PKG_VERSION:=2.8.5
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/Neilpang/acme.sh/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=4fc55b2112058e563616893fefb56c5ff4895a7e6327e9f8416797fdc44d98e3
+PKG_HASH:=45d964de8970096dae06aaa45dba2d9d09a41c0a43355191ee627eb00ba5db45
 PKG_BUILD_DIR:=$(BUILD_DIR)/acme.sh-$(PKG_VERSION)
 
 PKG_MAINTAINER:=Toke Høiland-Jørgensen <toke@toke.dk>
@@ -27,7 +27,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/acme
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+wget +ca-bundle +openssl-util +socat
+  DEPENDS:=+gnu-wget +ca-bundle +openssl-util +socat
   TITLE:=ACME (Letsencrypt) client
   URL:=https://acme.sh
   PKGARCH:=all
@@ -80,7 +80,7 @@ define Package/luci-app-acme
   SECTION:=luci
   CATEGORY:=LuCI
   TITLE:=ACME package - LuCI interface
-  DEPENDS:= lua luci-base +acme
+  DEPENDS:= lua luci-base luci-compat +acme
   SUBMENU:=3. Applications
   PKGARCH:=all
 endef

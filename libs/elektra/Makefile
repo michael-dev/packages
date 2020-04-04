@@ -15,7 +15,7 @@ PKG_NAME:=elektra
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILES:=LICENSE.md
 PKG_VERSION:=0.8.21
-PKG_RELEASE:=3
+PKG_RELEASE:=5
 
 # Use this for official releasees
 PKG_HASH:=51892570f18d1667d0da4d0908a091e41b41c20db9835765677109a3d150cd26
@@ -29,7 +29,8 @@ PKG_SOURCE_URL:=http://ftp.libelektra.org/ftp/elektra/releases
 #PKG_SOURCE_VERSION:=e97efb29a94f3a49cb952d06552fcf53708ea8c7
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.xz
 
-PKG_BUILD_DEPENDS:=elektra/host swig/host
+HOST_BUILD_DEPENDS:=swig/host
+PKG_BUILD_DEPENDS:=elektra/host lua
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
@@ -41,7 +42,7 @@ define Package/libelektra/Default
   CATEGORY:=Libraries
   TITLE:=Elektra
   URL:=http://www.libelektra.org/
-  SUBMENU:=libelektra
+  SUBMENU:=LibElektra
 endef
 
 define Package/libelektra/Default-description
@@ -233,19 +234,6 @@ $(call Package/libelektra/Default-description)
 This package contains support for storing the key database as yaml files.
 endef
 
-
-define Package/libelektra-python2
-  $(call Package/libelektra/Default)
-  TITLE:=Elektra python2 plugin
-  DEPENDS:=+libelektra-core +python-light +libstdcpp
-endef
-
-define Package/libelektra-python2/description
-$(call Package/libelektra/Default-description)
-
-This package adds python2 support to elektra.
-endef
-
 define Package/libelektra-python3
   $(call Package/libelektra/Default)
   TITLE:=Elektra python3 plugin
@@ -261,7 +249,7 @@ endef
 define Package/libelektra-lua
   $(call Package/libelektra/Default)
   TITLE:=Elektra lua plugin
-  DEPENDS:=+libelektra-core +lua +libstdcpp
+  DEPENDS:=+libelektra-core +lua5.3 +libstdcpp
 endef
 
 define Package/libelektra-lua/description
@@ -303,7 +291,7 @@ CMAKE_OPTIONS = \
 	-DKDB_DEFAULT_RESOLVER=resolver_fm_pb_b \
 	-DKDB_DEFAULT_STORAGE=ini \
 	-DENABLE_OPTIMIZATIONS=OFF \
-	-DPLUGINS="ALL;-multifile" \
+	-DPLUGINS="ALL;-multifile;-python2" \
 	-DICONV_FIND_REQUIRED=ON \
 	-DICONV_INCLUDE_DIR="$(ICONV_PREFIX)/include" \
 	-DICONV_LIBRARY="$(ICONV_PREFIX)/lib"
@@ -408,11 +396,6 @@ define Package/libelektra-yamlcpp/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libelektra-yamlcpp.so $(1)/usr/lib/
 endef
 
-define Package/libelektra-python2/install
-	$(INSTALL_DIR) $(1)/usr/lib/
-	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libelektra-python2.so $(1)/usr/lib/
-endef
-
 define Package/libelektra-python3/install
 	$(INSTALL_DIR) $(1)/usr/lib/
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/libelektra-python.so $(1)/usr/lib/
@@ -450,7 +433,6 @@ $(eval $(call BuildPackage,libelektra-xerces))
 $(eval $(call BuildPackage,libelektra-yamlcpp))
 $(eval $(call BuildPackage,libelektra-xml))
 $(eval $(call BuildPackage,libelektra-yajl))
-$(eval $(call BuildPackage,libelektra-python2))
 $(eval $(call BuildPackage,libelektra-python3))
 $(eval $(call BuildPackage,libelektra-lua))
 $(eval $(call BuildPackage,libelektra-extra))

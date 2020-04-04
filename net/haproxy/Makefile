@@ -10,18 +10,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=haproxy
-PKG_VERSION:=2.0.1
+PKG_VERSION:=2.1.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://www.haproxy.org/download/2.0/src
-PKG_HASH:=9975c475ba6f19aac4b665d8705f7b9f7911df7fc316ba7b9efd6fe263181eb1
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
+PKG_SOURCE_URL:=https://www.haproxy.org/download/2.1/src
+PKG_HASH:=51030ff696d7067162b4d24d354044293aecfbb36d7acc2f840c8d928bfe91cd
 
 PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>, \
 		Christian Lachner <gladiac@gmail.com>
 PKG_LICENSE:=GPL-2.0-only
 PKG_LICENSE_FILES:=LICENSE
+PKG_CPE_ID:=cpe:/a:haproxy:haproxy
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -33,18 +33,8 @@ define Package/haproxy/Default
   URL:=https://www.haproxy.org/
 endef
 
-define Download/lua535
-	FILE:=lua-5.3.5.tar.gz
-	URL:=https://www.lua.org/ftp/
-	HASH:=0c2eed3f960446e1a3e4b9a1ca2f3ff893b6ce41942cf54d5dd59ab4b3b058ac
-endef
-
 define Build/Prepare
 	$(call Build/Prepare/Default)
-ifeq ($(ENABLE_LUA),y)
-	tar -zxvf $(DL_DIR)/lua-5.3.5.tar.gz -C $(PKG_BUILD_DIR)
-	ln -s $(PKG_BUILD_DIR)/lua-5.3.5 $(PKG_BUILD_DIR)/lua
-endif
 endef
 
 define Package/haproxy/Default/conffiles
@@ -56,7 +46,7 @@ define Package/haproxy/Default/description
 endef
 
 define Package/haproxy
-  DEPENDS+= +libpcre +libltdl +zlib +libpthread +libopenssl +libncurses +libreadline +libatomic
+  DEPENDS+= +libpcre +libltdl +zlib +libpthread +liblua5.3 +libopenssl +libncurses +libreadline +libatomic
   TITLE+= (with SSL support)
   VARIANT:=ssl
 $(call Package/haproxy/Default)
@@ -74,7 +64,7 @@ endef
 define Package/haproxy-nossl
   TITLE+= (without SSL support)
   VARIANT:=nossl
-  DEPENDS+= +libpcre +libltdl +zlib +libpthread +libatomic
+  DEPENDS+= +libpcre +libltdl +zlib +libpthread +liblua5.3 +libatomic
   TITLE+= (without SSL support)
 $(call Package/haproxy/Default)
 endef
@@ -106,37 +96,16 @@ ifeq ($(BUILD_VARIANT),ssl)
 	ADDON+=ADDLIB="-lcrypto -lm "
 endif
 
-ifeq ($(ENABLE_LUA),y)
-	ADDON+=USE_LUA=1
-	ADDON+=LUA_LIB_NAME="lua535"
-	ADDON+=LUA_INC="$(STAGING_DIR)/lua-5.3.5/include"
-	ADDON+=LUA_LIB="$(STAGING_DIR)/lua-5.3.5/lib"
-endif
-
 ifeq ($(ENABLE_REGPARM),y)
 	ADDON+=USE_REGPARM=1
 endif
 
-ifeq ($(ENABLE_LUA),y)
-define Build/Compile/lua
-	$(MAKE) TARGET=$(LINUX_TARGET) -C $(PKG_BUILD_DIR)/lua \
-		INSTALL_TOP="$(STAGING_DIR)/lua-5.3.5/" \
-		CC="$(TARGET_CC)" \
-		CFLAGS="$(TARGET_CFLAGS) $(TARGET_CPPFLAGS)" \
-		LDFLAGS="$(TARGET_LDFLAGS) -lncurses -lreadline" \
-		LD="$(TARGET_LD)" \
-		linux install
-
-	mv $(STAGING_DIR)/lua-5.3.5/lib/liblua.a $(STAGING_DIR)/lua-5.3.5/lib/liblua535.a
-endef
-endif
-
 define Build/Compile
-	$(call Build/Compile/lua)
 	$(MAKE) TARGET=$(LINUX_TARGET) -C $(PKG_BUILD_DIR) \
 		DESTDIR="$(PKG_INSTALL_DIR)" \
 		CC="$(TARGET_CC)" \
 		PCREDIR="$(STAGING_DIR)/usr/" \
+		USE_LUA=1 LUA_LIB_NAME="lua5.3" LUA_INC="$(STAGING_DIR)/usr/include/lua5.3" LUA_LIB="$(STAGING_DIR)/usr/lib" \
 		SMALL_OPTS="-DBUFSIZE=16384 -DMAXREWRITE=1030 -DSYSTEM_MAXCONN=165530" \
 		USE_LINUX_TPROXY=1 USE_LINUX_SPLICE=1 USE_TFO=1 USE_NS=1 \
 		USE_ZLIB=1 USE_PCRE=1 USE_PCRE_JIT=1 USE_GETADDRINFO=1 \
@@ -171,8 +140,6 @@ define Package/haproxy/install
 	$(INSTALL_CONF) ./files/haproxy.cfg $(1)/etc/
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/haproxy.init $(1)/etc/init.d/haproxy
-	$(INSTALL_DIR) $(1)/etc/hotplug.d/net
-	$(INSTALL_BIN) ./files/haproxy.hotplug $(1)/etc/hotplug.d/net/90-haproxy
 endef
 
 Package/haproxy-nossl/install = $(Package/haproxy/install)
@@ -193,7 +160,6 @@ define Package/halog/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/contrib/halog/halog $(1)/usr/bin/
 endef
 
-$(eval $(call Download,lua535))
 $(eval $(call BuildPackage,haproxy))
 $(eval $(call BuildPackage,halog))
 $(eval $(call BuildPackage,haproxy-nossl))

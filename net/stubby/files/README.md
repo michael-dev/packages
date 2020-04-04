@@ -24,7 +24,7 @@ Stubby](https://dnsprivacy.org/wiki/display/DP/About+Stubby) page.
 Installation of this package can be achieved at the command line using `opkg
 install stubby`, or via the LUCI Web Interface. Installing the stubby package
 will also install the required dependency packages, including the
-`ca-certificates` package.
+`ca-bundle` package.
 
 ## Configuration
 
@@ -86,7 +86,7 @@ to use resolvers found in `/etc/resolv.conf` by setting the dnsmasq option
 command line:
 
     uci add_list dhcp.@dnsmasq[-1].server='127.0.0.1#5453'
-    uci dhcp.@dnsmasq[-1].noresolv=1
+    uci set dhcp.@dnsmasq[-1].noresolv=1
     uci commit && reload_config
 
 The same outcome can be achieved in the LUCI web interface as follows:

@@ -6,14 +6,15 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=subversion
-PKG_RELEASE:=1
-PKG_VERSION:=1.12.0
+PKG_RELEASE:=3
+PKG_VERSION:=1.13.0
 PKG_SOURCE_URL:=@APACHE/subversion
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
-PKG_HASH:=7fae7c73d8a007c107c0ae5eb372bc0bb013dbfe966fcd5c59cd5a195a5e2edf
+PKG_HASH:=bc50ce2c3faa7b1ae9103c432017df98dfd989c4239f9f8270bb3a314ed9e5bd
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 PKG_MAINTAINER:=Val Kulkov <val.kulkov@gmail.com>
+PKG_CPE_ID:=cpe:/a:apache:subversion
 
 PKG_FIXUP:=autoreconf
 PKG_MACRO_PATHS:=build/ac-macros
@@ -30,16 +31,16 @@ define Package/subversion/Default
   CATEGORY:=Network
   SUBMENU:=Version Control Systems
   TITLE:=A compelling replacement for CVS
-  DEPENDS:=+PACKAGE_unixodbc:unixodbc +libaprutil +libmagic $(ICONV_DEPENDS) $(INTL_DEPENDS)
+  DEPENDS:=+PACKAGE_unixodbc:unixodbc +libaprutil +libmagic +libsqlite3 $(ICONV_DEPENDS) $(INTL_DEPENDS)
   URL:=https://subversion.apache.org/
 endef
 
 define Package/subversion/Default/description
-	Subversion is a free/open-source version control system. That is,
-	Subversion manages files and directories, and the changes made to them,
-	over time. This allows you to recover older versions of your data, or
-	examine the history of how your data changed. In this regard, many
-	people think of a version control system as a sort of time machine.
+  Subversion is a free/open-source version control system. That is,
+  Subversion manages files and directories, and the changes made to them,
+  over time. This allows you to recover older versions of your data, or
+  examine the history of how your data changed. In this regard, many
+  people think of a version control system as a sort of time machine.
 endef
 
 define Package/subversion-libs
@@ -77,10 +78,6 @@ endef
 define Package/subversion-server/conffiles
 /etc/config/subversion
 endef
-
-TARGET_CFLAGS += $(FPIC)
-APU_LIBS=$(shell $(STAGING_DIR)/usr/bin/apu-1-config --link-libtool --libs)
-TARGET_LDFLAGS += $(APU_LIBS)
 
 CONFIGURE_ARGS += \
 	--with-apr="$(STAGING_DIR)/usr/bin/apr-1-config" \

@@ -5,17 +5,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=graphicsmagick
-PKG_VERSION:=1.3.32
+PKG_VERSION:=1.3.34
 PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/GraphicsMagick-$(PKG_VERSION)
 PKG_SOURCE:=GraphicsMagick-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=@SF/graphicsmagick
-PKG_HASH:=d1f70bc6d41de922199ce6b0a04af7b3492b2fc4a2be6ee24e0af4e15250db0a
+PKG_HASH:=7e1904c924cc3574aecc7ca6879fc6cf01070859e3ca4a06182b3e0eb346a0c2
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=Copyright.txt
 PKG_MAINTAINER:=Val Kulkov <val.kulkov@gmail.com>
+PKG_CPE_ID:=cpe:/a:graphicsmagick:graphicsmagick
 
 PKG_BUILD_PARALLEL:=1
 DISABLE_NLS:=

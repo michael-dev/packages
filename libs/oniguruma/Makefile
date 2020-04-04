@@ -5,14 +5,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=oniguruma
-PKG_VERSION:=6.9.2
+PKG_VERSION:=6.9.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=onig-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/kkos/oniguruma/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=3b568a9050839e7828b2f2d5bc9cd3650979b6b54a080f54c515320dddda06b0
+PKG_HASH:=aea68e5843b627f5fe6d3d6b598845b7f3622910e0568408e7cc2fa6b3690b87
 
-PKG_MAINTAINER:=Eneas U de Queiroz <cote2004-github@yahoo.com.br>
+PKG_MAINTAINER:=Eneas U de Queiroz <cotequeiroz@gmail.com>
 PKG_LICENSE:=BSD-2-Clause
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:oniguruma_project:oniguruma
@@ -27,7 +27,6 @@ define Package/oniguruma
     CATEGORY:=Libraries
     TITLE:=Regular expression library for different character encodings
     URL:=https://github.com/kkos/oniguruma
-    DEPENDS:=
     ABI_VERSION:=5
 endef
 

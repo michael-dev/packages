@@ -8,24 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ruamel-yaml
-PKG_VERSION:=0.15.97
+PKG_VERSION:=0.15.100
 PKG_RELEASE:=1
 
-PKG_SOURCE:=ruamel.yaml-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/r/ruamel.yaml/
-PKG_HASH:=17dbf6b7362e7aee8494f7a0f5cffd44902a6331fe89ef0853b855a7930ab845
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-ruamel.yaml-$(PKG_VERSION)
+PYPI_NAME:=ruamel.yaml
+PKG_HASH:=8e42f3067a59e819935a2926e247170ed93c8f0b2ab64526f888e026854db2e4
 
 PKG_MAINTAINER:=Josef Schlehofer <josef.schlehofer@nic.cz>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
-
-PKG_UNPACK:=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
 
 define Package/ruamel-yaml/Default
   SECTION:=lang
@@ -35,13 +30,6 @@ define Package/ruamel-yaml/Default
   URL:=https://bitbucket.org/ruamel/yaml
 endef
 
-define Package/python-ruamel-yaml
-$(call Package/ruamel-yaml/Default)
-  DEPENDS:= \
-      +PACKAGE_python-ruamel-yaml:python-light
-  VARIANT:=python
-endef
-
 define Package/python3-ruamel-yaml
 $(call Package/ruamel-yaml/Default)
   DEPENDS:= \
@@ -49,19 +37,11 @@ $(call Package/ruamel-yaml/Default)
   VARIANT:=python3
 endef
 
-define Package/ruamel-yaml/description
-ruamel-yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order
-endef
-
 define Package/python3-ruamel-yaml/description
-$(call Package/ruamel-yaml/description)
+ruamel-yaml is a YAML parser/emitter that supports roundtrip preservation of comments, seq/map flow style, and map key order
 .
 (Variant for Python3)
 endef
-
-$(eval $(call PyPackage,python-ruamel-yaml))
-$(eval $(call BuildPackage,python-ruamel-yaml))
-$(eval $(call BuildPackage,python-ruamel-yaml-src))
 
 $(eval $(call Py3Package,python3-ruamel-yaml))
 $(eval $(call BuildPackage,python3-ruamel-yaml))

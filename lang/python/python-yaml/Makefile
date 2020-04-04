@@ -7,26 +7,21 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=PyYAML
-PKG_VERSION:=5.1.1
+PKG_NAME:=python-yaml
+PKG_VERSION:=5.3
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://files.pythonhosted.org/packages/source/P/PyYAML
-PKG_HASH:=b4bb4d3f5e232425e25dda21c070ce05168a786ac9eda43768ab7f3ac2770955
+PYPI_NAME:=PyYAML
+PKG_HASH:=e9f45bd5b92c7974e59bcd2dcc8631a6b6cc380a904725fce7bc08872e691615
 
 PKG_MAINTAINER:=Josef Schlehofer <josef.schlehofer@nic.cz>
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
 PKG_CPE_ID:=cpe:/a:pyyaml_project:pyyaml
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(BUILD_VARIANT)-$(PKG_NAME)-$(PKG_VERSION)
-
+include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
-include ../python-package.mk
 include ../python3-package.mk
-
-PKG_UNPACK=$(HOST_TAR) -C $(PKG_BUILD_DIR) --strip-components=1 -xzf $(DL_DIR)/$(PKG_SOURCE)
 
 define Package/python-yaml/Default
   SECTION:=lang
@@ -37,38 +32,20 @@ define Package/python-yaml/Default
   DEPENDS:=+libyaml
 endef
 
-define Package/python-yaml
-$(call Package/python-yaml/Default)
-  DEPENDS+= \
-	+PACKAGE_python-yaml:python-light \
-	+PACKAGE_python-yaml:python-codecs
-  VARIANT:=python
-endef
-
 define Package/python3-yaml
 $(call Package/python-yaml/Default)
   DEPENDS+=+PACKAGE_python3-yaml:python3-light
   VARIANT:=python3
 endef
 
-define Package/python-yaml/description
-  PyYAML is a YAML parser and emitter for the Python programming language.
-endef
-
 define Package/python3-yaml/description
-$(call Package/python-yaml/description)
+  PyYAML is a YAML parser and emitter for the Python programming language.
 .
 (Variant for Python3)
 endef
 
-PYTHON_PKG_SETUP_GLOBAL_ARGS:=--with-libyaml
-PYTHON_PKG_SETUP_ARGS:=
 PYTHON3_PKG_SETUP_GLOBAL_ARGS:=--with-libyaml
 PYTHON3_PKG_SETUP_ARGS:=
-
-$(eval $(call PyPackage,python-yaml))
-$(eval $(call BuildPackage,python-yaml))
-$(eval $(call BuildPackage,python-yaml-src))
 
 $(eval $(call Py3Package,python3-yaml))
 $(eval $(call BuildPackage,python3-yaml))

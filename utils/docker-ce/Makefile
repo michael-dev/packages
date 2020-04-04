@@ -1,17 +1,31 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=docker-ce
-PKG_VERSION:=18.09.6
-PKG_RELEASE:=1
+PKG_VERSION:=19.03.8
+PKG_RELEASE:=2
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=components/cli/LICENSE components/engine/LICENSE
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/docker/docker-ce/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=e8d2dd41e09e838e9043d4a5cf8433d8860afa20a611025621f7817b7ab16012
-PKG_SOURCE_VERSION:=481bc77156
+PKG_HASH:=781c69e00e98f64fb167ee61de764882bd4926a873d98ce6f370d3cd3435b501
+PKG_SOURCE_VERSION:=afacb8b7f0 # SHA1 used within the docker executables
 
 PKG_MAINTAINER:=Gerard Ryan <G.M0N3Y.2503@gmail.com>
+
+define CheckExpectedSrcVer
+	$(eval SRC_VER:=$(shell grep --only-matching --perl-regexp '(?<=PKG_SOURCE_VERSION:=)(.*)' $(1)))
+	$(if $(subst $(2),,$(SRC_VER)), \
+		$(error ERROR: Expected $(1) source version '$(2)', found '$(SRC_VER)'), \
+		$(info OK: Expected $(1) source version '$(2)', found '$(SRC_VER)') \
+	)
+endef
+
+# values from respective '.installer' files at https://github.com/docker/docker-ce/blob/v$(PKG_VERSION)/components/engine/hack/dockerfile/install/
+$(eval $(call CheckExpectedSrcVer,../containerd/Makefile,7ad184331fa3e55e52b890ea95e65ba581ae3429))
+$(eval $(call CheckExpectedSrcVer,../libnetwork/Makefile,9fd385be8302dbe1071a3ce124891893ff27f90f))
+$(eval $(call CheckExpectedSrcVer,../runc/Makefile,dc9208a3303feef5b3839f4323d9beb36df0a9dd))
+$(eval $(call CheckExpectedSrcVer,../tini/Makefile,fec3683b971d9c3ef73f284f176672c44b448662))
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
@@ -30,8 +44,8 @@ define Package/docker-ce
   CATEGORY:=Utilities
   TITLE:=Docker Community Edition
   URL:=https://www.docker.com/
-  DEPENDS:=$(GO_ARCH_DEPENDS) @TARGET_x86_64 +btrfs-progs +libdevmapper +containerd +cgroupfs-mount +ca-certificates +iptables-mod-extra +DOCKER_SECCOMP:libseccomp \
-           +kmod-ikconfig +kmod-veth +kmod-br-netfilter +kmod-nf-ipvs
+  DEPENDS:=$(GO_ARCH_DEPENDS) @(aarch64||arm||x86_64) +btrfs-progs +ca-certificates +cgroupfs-mount +containerd +libdevmapper +libnetwork +tini \
+           +DOCKER_SECCOMP:libseccomp +iptables-mod-extra +kmod-br-netfilter +kmod-ikconfig +kmod-nf-conntrack-netlink +kmod-nf-ipvs +kmod-veth
   USERID:=docker:docker
   MENU:=1
 endef
@@ -64,13 +78,7 @@ endif
 
 define Build/Compile
 	( \
-		export GOPATH=$(GO_PKG_BUILD_DIR) \
-			GOCACHE=$(GO_PKG_CACHE_DIR) \
-			GOTMPDIR=$(GO_PKG_TMP_DIR) \
-			GOROOT_FINAL=$(GO_TARGET_ROOT) \
-			CC=$(TARGET_CC) \
-			CXX=$(TARGET_CXX) \
-			$(call GoPackage/Environment) \
+		export $(call GoPackage/Environment) \
 			GITCOMMIT=$(PKG_SOURCE_VERSION) \
 			DOCKER_GITCOMMIT=$(PKG_SOURCE_VERSION) \
 			DOCKER_BUILDTAGS='$(BUILDTAGS)' \
@@ -102,6 +110,9 @@ define Package/docker-ce/install
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/dockerd.init $(1)/etc/init.d/dockerd
+
+	$(INSTALL_DIR) $(1)/etc/docker
+	$(INSTALL_CONF) ./files/daemon.json $(1)/etc/docker/
 endef
 
 $(eval $(call BuildPackage,docker-ce))

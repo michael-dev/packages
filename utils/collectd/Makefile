@@ -8,17 +8,18 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=collectd
-PKG_VERSION:=5.9.0
-PKG_RELEASE:=2
+PKG_VERSION:=5.11.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=https://collectd.org/files/ \
 	https://github.com/collectd/collectd/releases/download/collectd-$(PKG_VERSION)
-PKG_HASH:=7b220f8898a061f6e7f29a8c16697d1a198277f813da69474a67911097c0626b
+PKG_HASH:=37b10a806e34aa8570c1cafa6006c604796fae13cc2e1b3e630d33dcba9e5db2
 
 PKG_FIXUP:=autoreconf
 PKG_REMOVE_FILES:=aclocal.m4 libltdl/aclocal.m4
 PKG_MAINTAINER:=Jo-Philipp Wich <jo@mein.io>, Hannu Nyman <hannu.nyman@iki.fi>
+PKG_CPE_ID:=cpe:/a:collectd:collectd
 
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
@@ -31,14 +32,18 @@ COLLECTD_PLUGINS_DISABLED:= \
 	aquaero \
 	barometer \
 	battery \
+	buddyinfo \
+	capabilities \
 	ceph \
 	cgroups \
 	cpusleep \
 	curl_json \
 	curl_xml \
 	dbi \
+	dcpmm \
 	dpdkevents \
 	dpdkstat \
+	dpdk_telemetry \
 	drbd \
 	fhcount \
 	genericjmx \
@@ -52,8 +57,10 @@ COLLECTD_PLUGINS_DISABLED:= \
 	intel_rdt \
 	ipc \
 	ipmi \
+	ipstats \
 	ipvs \
 	java \
+	logparser \
 	log_logstash \
 	lvm \
 	lpar \
@@ -72,6 +79,7 @@ COLLECTD_PLUGINS_DISABLED:= \
 	notify_email \
 	notify_nagios \
 	numa \
+	onewire \
 	openldap \
 	openvz \
 	oracle \
@@ -81,24 +89,29 @@ COLLECTD_PLUGINS_DISABLED:= \
 	perl \
 	pf \
 	pinba \
+	procevent \
 	python \
+	redfish \
 	redis \
-	routeros \
 	rrdcached \
 	serial \
 	sigrok \
+	slurm \
 	smart \
 	snmp_agent \
 	statsd \
 	swap \
 	synproxy \
+	sysevent \
 	tape \
 	tokyotyrant \
 	turbostat \
+	ubi \
 	uuid \
 	varnish \
 	virt \
 	vserver \
+	write_influxdb_udp \
 	write_kafka \
 	write_log \
 	write_mongodb \
@@ -158,13 +171,13 @@ COLLECTD_PLUGINS_SELECTED:= \
 	ntpd \
 	nut \
 	olsrd \
-	onewire \
 	openvpn \
 	ping \
 	postgresql \
 	powerdns \
 	processes \
 	protocols \
+	routeros \
 	rrdtool \
 	sensors \
 	snmp \
@@ -176,6 +189,7 @@ COLLECTD_PLUGINS_SELECTED:= \
 	teamspeak2 \
 	ted \
 	thermal \
+	threshold \
 	unixsock \
 	uptime \
 	users \
@@ -292,11 +306,6 @@ ifneq ($(CONFIG_PACKAGE_collectd-mod-modbus),)
   CONFIGURE_ARGS+= --with-libmodbus="$(STAGING_DIR)/usr"
 endif
 
-# exception: mod-onewire needs libow-capi
-ifneq ($(CONFIG_PACKAGE_collectd-mod-onewire),)
-  CONFIGURE_ARGS+= --with-libowcapi="$(STAGING_DIR)/usr"
-endif
-
 # exception: mod-rrdtool needs rrdtool-1.0.x
 ifneq ($(CONFIG_PACKAGE_collectd-mod-rrdtool),)
   CONFIGURE_ARGS+= --with-librrd="$(STAGING_DIR)/usr/lib/rrdtool-1.0"
@@ -364,7 +373,7 @@ $(eval $(call BuildPlugin,chrony,chrony status input,chrony,))
 $(eval $(call BuildPlugin,conntrack,connection tracking table size input,conntrack,))
 $(eval $(call BuildPlugin,contextswitch,context switch input,contextswitch,))
 $(eval $(call BuildPlugin,cpu,CPU input,cpu,))
-$(eval $(call BuildPlugin,cpufreq,CPU Freq input,cpufreq,@(TARGET_x86||TARGET_x86_64||TARGET_mvebu||TARGET_ipq806x||TARGET_armvirt))) # Only enable on x86 mvebu ipq806x armvirt
+$(eval $(call BuildPlugin,cpufreq,CPU Freq input,cpufreq,@(TARGET_x86||TARGET_x86_64||TARGET_mvebu||TARGET_ipq806x||TARGET_armvirt||TARGET_ipq40xx||TARGET_bcm27xx_bcm2709))) # Only enable on targets with CPUs supporting frequency scaling
 $(eval $(call BuildPlugin,csv,CSV output,csv,))
 $(eval $(call BuildPlugin,curl,cURL input,curl,+PACKAGE_collectd-mod-curl:libcurl))
 #$(eval $(call BuildPlugin,dbi,relational database input,dbi,+PACKAGE_collectd-mod-dbi:libdbi))
@@ -378,7 +387,7 @@ $(eval $(call BuildPlugin,exec,process exec input,exec,))
 $(eval $(call BuildPlugin,filecount,file count input,filecount,))
 $(eval $(call BuildPlugin,fscache,file-system based caching framework input,fscache,))
 $(eval $(call BuildPlugin,interface,network interfaces input,interface,))
-$(eval $(call BuildPlugin,iptables,iptables status input,iptables,+PACKAGE_collectd-mod-iptables:iptables +libiptc))
+$(eval $(call BuildPlugin,iptables,iptables status input,iptables,+PACKAGE_collectd-mod-iptables:iptables +libip4tc +libip6tc))
 $(eval $(call BuildPlugin,irq,interrupt usage input,irq,))
 $(eval $(call BuildPlugin,iwinfo,libiwinfo wireless statistics,iwinfo,+PACKAGE_collectd-mod-iwinfo:libiwinfo))
 $(eval $(call BuildPlugin,load,system load input,load,))
@@ -399,13 +408,13 @@ $(eval $(call BuildPlugin,nginx,nginx status input,nginx,+PACKAGE_collectd-mod-n
 $(eval $(call BuildPlugin,ntpd,NTP daemon status input,ntpd,))
 $(eval $(call BuildPlugin,nut,UPS monitoring input,nut,+PACKAGE_collectd-mod-nut:nut-common))
 $(eval $(call BuildPlugin,olsrd,OLSRd status input,olsrd,))
-$(eval $(call BuildPlugin,onewire,onewire sensor input,onewire,+PACKAGE_collectd-mod-onewire:libow-capi @BROKEN))
 $(eval $(call BuildPlugin,openvpn,OpenVPN traffic/compression input,openvpn,))
 $(eval $(call BuildPlugin,ping,ping status input,ping,+PACKAGE_collectd-mod-ping:liboping))
 $(eval $(call BuildPlugin,postgresql,PostgreSQL status input,postgresql,+PACKAGE_collectd-mod-postgresql:libpq))
 $(eval $(call BuildPlugin,powerdns,PowerDNS server status input,powerdns,))
 $(eval $(call BuildPlugin,processes,process status input,processes,+PACKAGE_collectd-mod-processes:libmnl))
 $(eval $(call BuildPlugin,protocols,network protocols input,protocols,))
+$(eval $(call BuildPlugin,routeros,MikroTik RouterOS input,routeros,+PACKAGE_collectd-mod-routeros:librouteros))
 $(eval $(call BuildPlugin,rrdtool,RRDtool output,rrdtool,+PACKAGE_collectd-mod-rrdtool:librrd1))
 $(eval $(call BuildPlugin,sensors,lm_sensors input,sensors,+PACKAGE_collectd-mod-sensors:libsensors))
 $(eval $(call BuildPlugin,snmp,SNMP input,snmp,+PACKAGE_collectd-mod-snmp:libnetsnmp))
@@ -417,6 +426,7 @@ $(eval $(call BuildPlugin,teamspeak2,TeamSpeak2 input,teamspeak2,))
 $(eval $(call BuildPlugin,ted,The Energy Detective input,ted,))
 $(eval $(call BuildPlugin,tcpconns,TCP connection tracking input,tcpconns,))
 $(eval $(call BuildPlugin,thermal,system temperatures input,thermal,))
+$(eval $(call BuildPlugin,threshold,Notifications and thresholds,threshold,))
 $(eval $(call BuildPlugin,unixsock,unix socket output,unixsock,))
 $(eval $(call BuildPlugin,uptime,uptime status input,uptime,))
 $(eval $(call BuildPlugin,users,user logged in status input,users,))

@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=simple-adblock
-PKG_VERSION:=1.7.0
+PKG_VERSION:=1.8.3
 PKG_RELEASE:=1
 PKG_MAINTAINER:=Stan Grishin <stangri@melmac.net>
 PKG_LICENSE:=GPL-3.0-or-later
@@ -20,8 +20,8 @@ define Package/simple-adblock
 endef
 
 define Package/simple-adblock/description
-This service provides dnsmasq-based ad blocking.
-Please see the README for further information.
+This service provides DNSMASQ or Unbound based ad blocking.
+Please see the project's README at github for further information.
 
 endef
 
@@ -55,12 +55,6 @@ define Package/simple-adblock/postinst
 	# check if we are on real system
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		/etc/init.d/simple-adblock enable
-		while uci -q del ucitrack.@simple-adblock[-1]; do :; done
-		uci -q batch <<-EOF >/dev/null
-			add ucitrack simple-adblock
-			set ucitrack.@simple-adblock[0].init='simple-adblock'
-			commit ucitrack
-	EOF
 	fi
 	exit 0
 endef
@@ -69,7 +63,6 @@ define Package/simple-adblock/prerm
 	#!/bin/sh
 	# check if we are on real system
 	if [ -z "$${IPKG_INSTROOT}" ]; then
-		while uci -q del ucitrack.@simple-adblock[-1]; do :; done
 		echo "Stopping service and removing rc.d symlink for simple-adblock"
 		/etc/init.d/simple-adblock stop || true
 		/etc/init.d/simple-adblock killcache || true
