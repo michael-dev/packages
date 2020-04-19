@@ -1,7 +1,5 @@
-Index: tinc-fem-1.0.35/src/route.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/route.c
-+++ tinc-fem-1.0.35/src/route.c
+--- a/src/route.c
++++ b/src/route.c
 @@ -481,7 +481,7 @@ static void learn_mac(mac_t *address, vl
  	avl_node_t *node;
  	connection_t *c;
@@ -32,11 +30,9 @@ Index: tinc-fem-1.0.35/src/route.c
  		route_broadcast(source, packet);
  		return;
  	}
-Index: tinc-fem-1.0.35/src/subnet.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/subnet.c
-+++ tinc-fem-1.0.35/src/subnet.c
-@@ -459,16 +459,17 @@ subnet_t *lookup_subnet(const node_t *ow
+--- a/src/subnet.c
++++ b/src/subnet.c
+@@ -444,16 +444,17 @@ subnet_t *lookup_subnet(const node_t *ow
  	return avl_search(owner->subnet_tree, subnet);
  }
  
@@ -57,10 +53,8 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		if(!cache_mac_valid[i] && min_lru != 0) {
  			min_lru = 0;
  			cache_mac_slot = i;
-Index: tinc-fem-1.0.35/src/subnet.h
-===================================================================
---- tinc-fem-1.0.35.orig/src/subnet.h
-+++ tinc-fem-1.0.35/src/subnet.h
+--- a/src/subnet.h
++++ b/src/subnet.h
 @@ -79,7 +79,7 @@ extern void subnet_update(struct node_t
  extern bool net2str(char *netstr, int len, const subnet_t *subnet);
  extern bool str2net(subnet_t *subnet, const char *netstr);

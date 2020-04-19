@@ -25,7 +25,7 @@ Last-Update: <YYYY-MM-DD>
 
 --- a/src/subnet.c
 +++ b/src/subnet.c
-@@ -516,6 +516,7 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -451,6 +451,7 @@ subnet_t *lookup_subnet_mac(const node_t
  	time_t min_lru = now + 1;
  	int base = (cache_seg ? (CACHE_SIZE / 2) : 0);
  	int cache_mac_slot = base;
@@ -33,7 +33,7 @@ Last-Update: <YYYY-MM-DD>
  
  	// Check if this address is cached
  
-@@ -544,6 +545,9 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -479,6 +480,9 @@ subnet_t *lookup_subnet_mac(const node_t
  		if(memcmp(address, &cache_mac_address[i], sizeof(*address)))
  			continue;
  
@@ -43,7 +43,7 @@ Last-Update: <YYYY-MM-DD>
  		cache_mac_lru[i] = now;
  		return cache_mac_subnet[i];
  	}
-@@ -557,13 +561,20 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -492,13 +496,20 @@ subnet_t *lookup_subnet_mac(const node_t
  			continue;
  		}
  

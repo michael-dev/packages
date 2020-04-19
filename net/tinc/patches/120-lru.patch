@@ -1,7 +1,5 @@
-Index: tinc-fem-1.0.35/src/subnet.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/subnet.c
-+++ tinc-fem-1.0.35/src/subnet.c
+--- a/src/subnet.c
++++ b/src/subnet.c
 @@ -53,7 +53,7 @@ static mac_t cache_mac_address[CACHE_SIZ
  static vlan_t cache_mac_vlan_id[CACHE_SIZE];
  static subnet_t *cache_mac_subnet[CACHE_SIZE];
@@ -11,7 +9,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  
  void subnet_cache_flush(void) {
  	int i;
-@@ -463,14 +463,26 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -448,14 +448,26 @@ subnet_t *lookup_subnet_mac(const node_t
  	subnet_t *p, *r = NULL;
  	avl_node_t *n;
  	int i;
@@ -38,7 +36,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		if(owner && cache_mac_subnet[i] && cache_mac_subnet[i]->owner != owner) {
  			continue;
  		}
-@@ -478,9 +490,11 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -463,9 +475,11 @@ subnet_t *lookup_subnet_mac(const node_t
  		if(vlan_id != cache_mac_vlan_id[i])
  			continue;
  
@@ -53,7 +51,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  	}
  
  	// Search all subnets for a matching one
-@@ -503,11 +517,11 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -488,11 +502,11 @@ subnet_t *lookup_subnet_mac(const node_t
  
  	// Cache the result
  

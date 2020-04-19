@@ -1,7 +1,5 @@
-Index: tinc-fem-1.0.35/src/net.h
-===================================================================
---- tinc-fem-1.0.35.orig/src/net.h
-+++ tinc-fem-1.0.35/src/net.h
+--- a/src/net.h
++++ b/src/net.h
 @@ -40,6 +40,8 @@ typedef struct mac_t {
  	uint8_t x[6];
  } mac_t;
@@ -11,10 +9,8 @@ Index: tinc-fem-1.0.35/src/net.h
  typedef struct ipv4_t {
  	uint8_t x[4];
  } ipv4_t;
-Index: tinc-fem-1.0.35/src/route.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/route.c
-+++ tinc-fem-1.0.35/src/route.c
+--- a/src/route.c
++++ b/src/route.c
 @@ -476,24 +476,25 @@ static void clamp_mss(const node_t *sour
  	}
  }
@@ -108,10 +104,8 @@ Index: tinc-fem-1.0.35/src/route.c
  
  		if(type == ETH_P_IP && packet->len > 576 + ethlen) {
  			if(packet->data[6 + ethlen] & 0x40) {
-Index: tinc-fem-1.0.35/src/subnet.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/subnet.c
-+++ tinc-fem-1.0.35/src/subnet.c
+--- a/src/subnet.c
++++ b/src/subnet.c
 @@ -48,6 +48,7 @@ static bool cache_ipv6_valid[2];
  static int cache_ipv6_slot;
  
@@ -132,26 +126,24 @@ Index: tinc-fem-1.0.35/src/subnet.c
  	result = memcmp(&a->net.mac.address, &b->net.mac.address, sizeof(mac_t));
  
  	if(result) {
-@@ -207,6 +213,7 @@ void subnet_del(node_t *n, subnet_t *sub
- bool str2net(subnet_t *subnet, const char *subnetstr) {
- 	int i, l;
- 	uint16_t x[8];
+@@ -210,6 +216,7 @@ bool str2net(subnet_t *subnet, const cha
+ 	str[sizeof(str) - 1] = 0;
+ 	int consumed;
+ 
 +	unsigned int vlan_id;
  	int weight = 10;
+ 	char *weight_separator = strchr(str, '#');
  
- 	if(sscanf(subnetstr, "%hu.%hu.%hu.%hu/%d#%d",
-@@ -277,8 +284,8 @@ bool str2net(subnet_t *subnet, const cha
- 		return true;
- 	}
+@@ -250,7 +257,7 @@ bool str2net(subnet_t *subnet, const cha
  
--	if(sscanf(subnetstr, "%hx:%hx:%hx:%hx:%hx:%hx#%d",
--	                &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &weight) >= 6) {
-+	if(sscanf(subnetstr, "%hx:%hx:%hx:%hx:%hx:%hx@%u#%d",
-+			&x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &vlan_id, &weight) >= 7) {
- 		subnet->type = SUBNET_MAC;
- 		subnet->weight = weight;
+ 	uint16_t x[8];
  
-@@ -286,6 +293,8 @@ bool str2net(subnet_t *subnet, const cha
+-	if(sscanf(str, "%hx:%hx:%hx:%hx:%hx:%hx%n", &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &consumed) >= 6 && !str[consumed]) {
++	if(sscanf(str, "%hx:%hx:%hx:%hx:%hx:%hx@%u%n", &x[0], &x[1], &x[2], &x[3], &x[4], &x[5], &vlan_id, &consumed) >= 6 && !str[consumed]) {
+ 		/*
+ 		   Normally we should check that each part has two digits to prevent ambiguities.
+ 		   However, in old tinc versions net2str() will aggressively return MAC addresses with one-digit parts,
+@@ -267,6 +274,8 @@ bool str2net(subnet_t *subnet, const cha
  			subnet->net.mac.address.x[i] = x[i];
  		}
  
@@ -160,7 +152,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		return true;
  	}
  
-@@ -393,13 +402,14 @@ bool net2str(char *netstr, int len, cons
+@@ -378,13 +387,14 @@ bool net2str(char *netstr, int len, cons
  
  	switch(subnet->type) {
  	case SUBNET_MAC:
@@ -176,7 +168,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		         subnet->weight);
  		break;
  
-@@ -443,7 +453,7 @@ subnet_t *lookup_subnet(const node_t *ow
+@@ -428,7 +438,7 @@ subnet_t *lookup_subnet(const node_t *ow
  	return avl_search(owner->subnet_tree, subnet);
  }
  
@@ -185,7 +177,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  	subnet_t *p, *r = NULL;
  	avl_node_t *n;
  	int i;
-@@ -459,6 +469,9 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -444,6 +454,9 @@ subnet_t *lookup_subnet_mac(const node_t
  			continue;
  		}
  
@@ -195,7 +187,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		if(!memcmp(address, &cache_mac_address[i], sizeof(*address))) {
  			return cache_mac_subnet[i];
  		}
-@@ -473,7 +486,7 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -458,7 +471,7 @@ subnet_t *lookup_subnet_mac(const node_t
  			continue;
  		}
  
@@ -204,7 +196,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  			r = p;
  
  			if(p->owner->status.reachable) {
-@@ -487,6 +500,7 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -472,6 +485,7 @@ subnet_t *lookup_subnet_mac(const node_t
  	cache_mac_slot = !cache_mac_slot;
  	memcpy(&cache_mac_address[cache_mac_slot], address, sizeof(*address));
  	cache_mac_subnet[cache_mac_slot] = r;
@@ -212,10 +204,8 @@ Index: tinc-fem-1.0.35/src/subnet.c
  	cache_mac_valid[cache_mac_slot] = true;
  
  	return r;
-Index: tinc-fem-1.0.35/src/subnet.h
-===================================================================
---- tinc-fem-1.0.35.orig/src/subnet.h
-+++ tinc-fem-1.0.35/src/subnet.h
+--- a/src/subnet.h
++++ b/src/subnet.h
 @@ -32,6 +32,7 @@ typedef enum subnet_type_t {
  
  typedef struct subnet_mac_t {

@@ -1,7 +1,5 @@
-Index: tinc-fem-1.0.35/src/graph.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/graph.c
-+++ tinc-fem-1.0.35/src/graph.c
+--- a/src/graph.c
++++ b/src/graph.c
 @@ -82,6 +82,11 @@ static void mst_kruskal(void) {
  		c->status.mst = false;
  	}
@@ -27,15 +25,13 @@ Index: tinc-fem-1.0.35/src/graph.c
  	/* now dump all edges */
  	for(node = edge_weight_tree->head; node; node = node->next) {
  		e = node->data;
--		fprintf(file, "	%s -> %s;\n", e->from->name, e->to->name);
-+		fprintf(file, "	%s -> %s // weight %d, conn mst %d, edge msg %d\n", e->from->name, e->to->name, e->weight, (e->connection ? e->connection->status.mst : -1), e->mst);
+-		fprintf(file, "	\"%s\" -> \"%s\";\n", e->from->name, e->to->name);
++		fprintf(file, "	\"%s\" -> \"%s\"; // weight %d, conn mst %d, edge msg %d\n", e->from->name, e->to->name, e->weight, (e->connection ? e->connection->status.mst : -1), e->mst);
  	}
  
  	fprintf(file, "}\n");
-Index: tinc-fem-1.0.35/src/edge.h
-===================================================================
---- tinc-fem-1.0.35.orig/src/edge.h
-+++ tinc-fem-1.0.35/src/edge.h
+--- a/src/edge.h
++++ b/src/edge.h
 @@ -33,6 +33,7 @@ typedef struct edge_t {
  
  	uint32_t options;                /* options turned on for this edge */

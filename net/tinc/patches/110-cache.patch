@@ -1,7 +1,5 @@
-Index: tinc-fem-1.0.35/src/subnet.c
-===================================================================
---- tinc-fem-1.0.35.orig/src/subnet.c
-+++ tinc-fem-1.0.35/src/subnet.c
+--- a/src/subnet.c
++++ b/src/subnet.c
 @@ -37,26 +37,32 @@ avl_tree_t *subnet_tree;
  
  /* Subnet lookup cache */
@@ -48,7 +46,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  }
  
  /* Subnet comparison */
-@@ -460,7 +466,7 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -445,7 +451,7 @@ subnet_t *lookup_subnet_mac(const node_t
  
  	// Check if this address is cached
  
@@ -57,7 +55,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		if(!cache_mac_valid[i]) {
  			continue;
  		}
-@@ -497,7 +503,7 @@ subnet_t *lookup_subnet_mac(const node_t
+@@ -482,7 +488,7 @@ subnet_t *lookup_subnet_mac(const node_t
  
  	// Cache the result
  
@@ -66,7 +64,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  	memcpy(&cache_mac_address[cache_mac_slot], address, sizeof(*address));
  	cache_mac_subnet[cache_mac_slot] = r;
  	cache_mac_vlan_id[cache_mac_slot] = vlan_id;
-@@ -513,7 +519,7 @@ subnet_t *lookup_subnet_ipv4(const ipv4_
+@@ -498,7 +504,7 @@ subnet_t *lookup_subnet_ipv4(const ipv4_
  
  	// Check if this address is cached
  
@@ -75,7 +73,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		if(!cache_ipv4_valid[i]) {
  			continue;
  		}
-@@ -543,7 +549,7 @@ subnet_t *lookup_subnet_ipv4(const ipv4_
+@@ -528,7 +534,7 @@ subnet_t *lookup_subnet_ipv4(const ipv4_
  
  	// Cache the result
  
@@ -84,7 +82,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  	memcpy(&cache_ipv4_address[cache_ipv4_slot], address, sizeof(*address));
  	cache_ipv4_subnet[cache_ipv4_slot] = r;
  	cache_ipv4_valid[cache_ipv4_slot] = true;
-@@ -558,7 +564,7 @@ subnet_t *lookup_subnet_ipv6(const ipv6_
+@@ -543,7 +549,7 @@ subnet_t *lookup_subnet_ipv6(const ipv6_
  
  	// Check if this address is cached
  
@@ -93,7 +91,7 @@ Index: tinc-fem-1.0.35/src/subnet.c
  		if(!cache_ipv6_valid[i]) {
  			continue;
  		}
-@@ -588,7 +594,7 @@ subnet_t *lookup_subnet_ipv6(const ipv6_
+@@ -573,7 +579,7 @@ subnet_t *lookup_subnet_ipv6(const ipv6_
  
  	// Cache the result
  
