@@ -1,0 +1,10 @@
+--- a/ntpclient.c
++++ b/ntpclient.c
+@@ -46,6 +46,7 @@
+ #ifdef USE_OBSOLETE_GETTIMEOFDAY
+ #include <sys/time.h>
+ #endif
++#include <linux/sockios.h>
+ 
+ #include "ntpclient.h"
+ 
