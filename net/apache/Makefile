@@ -8,18 +8,17 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=apache
-PKG_VERSION:=2.4.41
-PKG_RELEASE:=6
+PKG_VERSION:=2.4.46
+PKG_RELEASE:=2
 PKG_SOURCE_NAME:=httpd
 
 PKG_SOURCE:=$(PKG_SOURCE_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=@APACHE/httpd/
-PKG_HASH:=133d48298fe5315ae9366a0ec66282fa4040efa5d566174481077ade7d18ea40
+PKG_HASH:=740eddf6e1c641992b22359cabc66e6325868c3c5e2e3f98faf349b61ecf41ea
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_SOURCE_NAME)-$(PKG_VERSION)
 
-PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>, \
-		Sebastian Kemper <sebastian_ml@gmx.net>
+PKG_MAINTAINER:=Thomas Heil <heil@terminal-consulting.de>
 PKG_LICENSE:=Apache-2.0
 PKG_LICENSE_FILES:=LICENSE
 
@@ -139,6 +138,11 @@ define Package/apache-suexec
 $(call Package/apache/Default)
   TITLE:=Apache suEXEC
   DEPENDS:=apache
+  # Directory "/usr/lib/apache2/suexec_dir" is installed with mode 0750
+  # and is only accessible by root and the group apache. This way apache
+  # can access the SUID binary "suexec" contained within while others
+  # cannot.
+  FILE_MODES:=/usr/lib/apache2/suexec_dir:root:apache:0750
 endef
 
 define Package/apache-suexec/description
@@ -246,12 +250,9 @@ endif
 ifneq ($(CONFIG_PACKAGE_apache-mod-suexec)$(CONFIG_PACKAGE_apache-suexec),)
 CONFIGURE_ARGS+= \
 	--enable-suexec \
-	--with-suexec-bin=/usr/sbin/suexec \
+	--with-suexec-bin=/usr/lib/apache2/suexec_dir/suexec \
 	--with-suexec-caller=apache \
-	--with-suexec-docroot=/var/www \
-	--with-suexec-logfile=/var/log/apache2/suexec.log \
-	--with-suexec-uidmin=99 \
-	--with-suexec-gidmin=99
+	--with-suexec-logfile=/var/log/apache2/suexec.log
 else
 CONFIGURE_ARGS+= \
 	--disable-suexec
@@ -271,11 +272,6 @@ CONFIGURE_VARS += \
 	ac_cv_gettid=yes \
 	ap_cv_void_ptr_lt_long=no
 
-define Build/Prepare
-	$(call Build/Prepare/Default)
-	$(INSTALL_DATA) ./files/openwrt.layout $(PKG_BUILD_DIR)/config.layout
-endef
-
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/apxs $(1)/usr/bin
@@ -286,8 +282,6 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/share/apache2/build
 	$(CP) $(PKG_INSTALL_DIR)/usr/share/apache2/build/* \
 				$(1)/usr/share/apache2/build
-	$(SED) 's%/usr/share/apache2/build%$(STAGING_DIR)/usr/share/apache2/build%' \
-		$(1)/usr/bin/apxs
 	$(SED) 's%^prefix =.*%prefix = $(STAGING_DIR)/usr%' \
 		$(1)/usr/share/apache2/build/config_vars.mk
 endef
@@ -338,8 +332,9 @@ define Package/apache-icons/install
 endef
 
 define Package/apache-suexec/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(CP) $(PKG_INSTALL_DIR)/usr/sbin/suexec $(1)/usr/sbin
+	$(INSTALL_DIR) $(1)/usr/lib/apache2/suexec_dir
+	$(INSTALL_SUID) $(PKG_INSTALL_DIR)/usr/sbin/suexec \
+			$(1)/usr/lib/apache2/suexec_dir
 endef
 
 define Package/apache-utils/install

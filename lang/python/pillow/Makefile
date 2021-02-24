@@ -7,11 +7,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pillow
-PKG_VERSION:=6.2.1
+PKG_VERSION:=8.1.0
 PKG_RELEASE:=1
 
 PYPI_NAME:=Pillow
-PKG_HASH:=bf4e972a88f8841d8fdc6db1a75e0f8d763e66e3754b03006cbc3854d89f1cb1
+PKG_HASH:=887668e792b7edbfb1d3c9d8b5d8c859269a0f0eba4dda562adb95500f60dbba
 
 PKG_MAINTAINER:=Alexandru Ardelean <ardeleanalex@gmail.com>
 PKG_LICENSE:=HPND
@@ -22,25 +22,17 @@ include ../pypi.mk
 include $(INCLUDE_DIR)/package.mk
 include ../python3-package.mk
 
-define Package/python-pillow/Default
+define Package/python3-pillow
   SUBMENU:=Python
   SECTION:=lang
   CATEGORY:=Languages
   TITLE:=The friendly PIL fork
   URL:=https://python-pillow.org/
-  DEPENDS:=+libfreetype +libjpeg +libtiff +zlib
-endef
-
-define Package/python3-pillow
-$(call Package/python-pillow/Default)
-  DEPENDS+=+PACKAGE_python3-pillow:python3
-  VARIANT:=python3
+  DEPENDS:=+libfreetype +libjpeg +libtiff +zlib +python3
 endef
 
 define Package/python3-pillow/description
   The friendly PIL fork
-.
-(Variant for Python3)
 endef
 
 PYTHON3_PKG_SETUP_GLOBAL_ARGS += build_ext \

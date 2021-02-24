@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=tcp_wrappers
 PKG_VERSION:=7.6
-PKG_RELEASE:=2
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)_$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=ftp://ftp.porcupine.org/pub/security
@@ -53,7 +53,7 @@ define Build/Compile
 		tidy all
 endef
 
-define Build/InstallDev	
+define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(CP) $(PKG_BUILD_DIR)/tcpd.h $(1)/usr/include/
 	$(INSTALL_DIR) $(1)/usr/lib
@@ -61,9 +61,9 @@ define Build/InstallDev
 	$(CP) $(PKG_BUILD_DIR)/shared/libwrap.so* $(1)/usr/lib/
 endef
 
-define Package/libwrap/install	
+define Package/libwrap/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_BUILD_DIR)/shared/libwrap.so.* $(1)/usr/lib/
 endef
-	
+
 $(eval $(call BuildPackage,libwrap))

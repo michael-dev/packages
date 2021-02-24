@@ -8,18 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=sysstat
-PKG_VERSION:=12.2.1
+PKG_VERSION:=12.4.2
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://pagesperso-orange.fr/sebastien.godard/
-PKG_HASH:=8edb0e19b514ac560a098a02933a4735b881296d61014db89bf80f05dd7a4732
+PKG_HASH:=3701b2c1883d50eb384d7b95ce5b6df0a71fdcb3c23f96cb58098d1bcffa018f
 
 PKG_MAINTAINER:=Marko Ratkaj <marko.ratkaj@sartura.hr>
 PKG_LICENSE:=GPL-2.0-or-later
 PKG_LICENSE_FILES:=COPYING
 PKG_CPE_ID:=cpe:/a:sysstat_project:sysstat
 
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
 
@@ -40,13 +41,13 @@ define Package/sysstat/description
 endef
 
 define Package/sysstat/conffiles
+/etc/config/sysstat
 /etc/sysstat/sysstat.ioconf
 /etc/sysstat/sysstat
 endef
 
 CONFIGURE_VARS+= \
 	sa_lib_dir="/usr/lib/sysstat" \
-	sa_dir="/var/log/sysstat" \
 	conf_dir="/etc/sysstat"
 
 CONFIGURE_ARGS+= \

@@ -37,6 +37,7 @@ NGINX_WEBSERVER=0
 UPDATE_NGINX=0
 UPDATE_UHTTPD=0
 UPDATE_HAPROXY=0
+USER_CLEANUP=
 
 . /lib/functions.sh
 
@@ -168,6 +169,11 @@ post_checks()
 	/etc/init.d/haproxy restart
 	log "Restarting haproxy..."
     fi
+
+    if [ -n "$USER_CLEANUP" ] && [ -f "$USER_CLEANUP" ]; then
+	log "Running user-provided cleanup script from $USER_CLEANUP."
+	"$USER_CLEANUP" || return 1
+    fi
 }
 
 err_out()
@@ -207,6 +213,8 @@ issue_cert()
     local failed_dir
     local webroot
     local dns
+    local user_setup
+    local user_cleanup
     local ret
     local staging=
     local HOOK=
@@ -220,10 +228,13 @@ issue_cert()
     config_get keylength "$section" keylength
     config_get webroot "$section" webroot
     config_get dns "$section" dns
+    config_get user_setup "$section" user_setup
+    config_get user_cleanup "$section" user_cleanup
 
     UPDATE_NGINX=$update_nginx
     UPDATE_UHTTPD=$update_uhttpd
     UPDATE_HAPROXY=$update_haproxy
+    USER_CLEANUP=$user_cleanup
 
     [ "$enabled" -eq "1" ] || return
 
@@ -237,7 +248,12 @@ issue_cert()
     set -- $domains
     main_domain=$1
 
-    [ -n "$webroot" ] || [ -n "$dns" ] || pre_checks "$main_domain" || return 1
+    if [ -n "$user_setup" ] && [ -f "$user_setup" ]; then
+	log "Running user-provided setup script from $user_setup."
+	"$user_setup" "$main_domain" || return 1
+    else
+	[ -n "$webroot" ] || [ -n "$dns" ] || pre_checks "$main_domain" || return 1
+    fi
 
     log "Running $APP for $main_domain"
 
@@ -339,7 +355,23 @@ issue_cert()
 	# commit and reload is in post_checks
     fi
 
-    if [ -e /etc/init.d/nginx ] && [ "$update_nginx" -eq "1" ]; then
+    local nginx_updated
+    nginx_updated=0
+    if command -v nginx-util 2>/dev/null && [ "$update_nginx" -eq "1" ]; then
+	nginx_updated=1
+	for domain in $domains; do
+	    if [ "$APP" = "uacme" ]; then
+		nginx-util add_ssl "${domain}" uacme "$STATE_DIR/${main_domain}/cert.pem" \
+		    "$STATE_DIR/private/${main_domain}/key.pem" || nginx_updated=0
+	    else
+		nginx-util add_ssl "${domain}" acme "$STATE_DIR/${main_domain}/fullchain.cer" \
+		    "$STATE_DIR/${main_domain}/${main_domain}.key" || nginx_updated=0
+	    fi
+	done
+	# reload is in post_checks
+    fi
+
+    if [ "$nginx_updated" -eq "0" ] && [ -w /etc/nginx/nginx.conf ] && [ "$update_nginx" -eq "1" ]; then
 	if [ "$APP" = "uacme" ]; then
 	    sed -i "s#ssl_certificate\ .*#ssl_certificate $STATE_DIR/${main_domain}/cert.pem;#g" /etc/nginx/nginx.conf
 	    sed -i "s#ssl_certificate_key\ .*#ssl_certificate_key $STATE_DIR/private/${main_domain}/key.pem;#g" /etc/nginx/nginx.conf

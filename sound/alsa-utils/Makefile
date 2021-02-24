@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=alsa-utils
-PKG_VERSION:=1.1.9
+PKG_VERSION:=1.2.4
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=ftp://ftp.alsa-project.org/pub/utils/ \
 		http://distfiles.gentoo.org/distfiles/
-PKG_HASH:=5ddf2cbddb4bd1a4a2a6492a09c25898b08c3ad64893c3655be14194cf0a213a
+PKG_HASH:=98ffc2d599de0577d423a48fa5f20a992ca0b82d812ed1f2e58ade49ac6da426
 
 PKG_MAINTAINER:=Ted Hess <thess@kitschensync.net>
 PKG_LICENSE:=GPL-2.0-or-later
@@ -29,7 +29,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/alsa-utils
   SECTION:=sound
   CATEGORY:=Sound
-  DEPENDS:=+alsa-lib +libncursesw +libpthread
+  DEPENDS:=+alsa-lib +alsa-ucm-conf +libncursesw +libpthread
   TITLE:=ALSA (Advanced Linux Sound Architecture) utilities
   URL:=https://www.alsa-project.org/
 endef
@@ -50,13 +50,18 @@ define Package/alsa-utils-tests
   URL:=https://www.alsa-project.org/
 endef
 
-CONFIGURE_ARGS+= \
+CONFIGURE_ARGS += \
 	--disable-rpath \
 	--disable-alsatest \
 	--disable-bat \
 	--disable-xmlto \
 	--disable-rst2man \
 	--with-curses=ncursesw
+
+CONFIGURE_VARS += \
+	ac_cv_header_samplerate_h=no
+
+TARGET_LDFLAGS += -latopology
 
 define Package/alsa-utils/install
 	$(INSTALL_DIR) $(1)/usr/{s,}bin

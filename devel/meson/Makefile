@@ -1,11 +1,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=meson
-PKG_VERSION:=0.53.2
+PKG_VERSION:=0.56.0
 PKG_RELEASE:=1
 
 PYPI_NAME:=meson
-PKG_HASH:=3e8f830f33184397c2eb0b651ec502adb63decb28978bdc84b3558d71284c21f
+PKG_HASH:=291dd38ff1cd55fcfca8fc985181dd39be0d3e5826e5f0013bf867be40117213
 
 PKG_MAINTAINER:=Andre Heider <a.heider@gmail.com>
 PKG_LICENSE:=Apache-2.0
@@ -40,7 +40,6 @@ define Package/meson
   TITLE:=meson
   URL:=https://mesonbuild.com/
   DEPENDS:=+ninja +python3-pkg-resources
-  VARIANT:=python3
 endef
 
 define Package/meson/description
