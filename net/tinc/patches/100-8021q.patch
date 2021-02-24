@@ -1,6 +1,6 @@
 --- a/src/net.h
 +++ b/src/net.h
-@@ -40,6 +40,8 @@ typedef struct mac_t {
+@@ -44,6 +44,8 @@ typedef struct mac_t {
  	uint8_t x[6];
  } mac_t;
  
@@ -11,37 +11,33 @@
  } ipv4_t;
 --- a/src/route.c
 +++ b/src/route.c
-@@ -476,24 +476,25 @@ static void clamp_mss(const node_t *sour
- 	}
+@@ -524,20 +524,21 @@ static void age_subnets(void *data) {
+ 	});
  }
  
 -static void learn_mac(mac_t *address) {
+-	subnet_t *subnet = lookup_subnet_mac(myself, address);
 +static void learn_mac(mac_t *address, vlan_t vlan_id) {
- 	subnet_t *subnet;
- 	avl_node_t *node;
- 	connection_t *c;
- 
--	subnet = lookup_subnet_mac(myself, address);
-+	subnet = lookup_subnet_mac(myself, address, vlan_id);
++	subnet_t *subnet = lookup_subnet_mac(myself, address, vlan_id);
  
  	/* If we don't know this MAC address yet, store it */
  
  	if(!subnet) {
--		ifdebug(TRAFFIC) logger(LOG_INFO, "Learned new MAC address %x:%x:%x:%x:%x:%x",
-+		ifdebug(TRAFFIC) logger(LOG_INFO, "Learned new MAC address %x:%x:%x:%x:%x:%x in VLAN %d",
- 		                        address->x[0], address->x[1], address->x[2], address->x[3],
--		                        address->x[4], address->x[5]);
-+					address->x[4], address->x[5], vlan_id);
+-		logger(DEBUG_TRAFFIC, LOG_INFO, "Learned new MAC address %x:%x:%x:%x:%x:%x",
++		logger(DEBUG_TRAFFIC, LOG_INFO, "Learned new MAC address %x:%x:%x:%x:%x:%x in VLAN %d",
+ 		       address->x[0], address->x[1], address->x[2], address->x[3],
+-		       address->x[4], address->x[5]);
++		       address->x[4], address->x[5], vlan_id);
  
  		subnet = new_subnet();
  		subnet->type = SUBNET_MAC;
- 		subnet->expires = now + macexpire;
+ 		subnet->expires = now.tv_sec + macexpire;
  		subnet->net.mac.address = *address;
 +		subnet->net.mac.vlan = vlan_id;
  		subnet->weight = 10;
  		subnet_add(myself, subnet);
  		subnet_update(myself, subnet, true);
-@@ -1025,19 +1026,31 @@ static void route_arp(node_t *source, vp
+@@ -1028,19 +1029,31 @@ static void route_arp(node_t *source, vp
  static void route_mac(node_t *source, vpn_packet_t *packet) {
  	subnet_t *subnet;
  	mac_t dest;
@@ -62,59 +58,127 @@
  
  	if(source == myself) {
  		mac_t src;
- 		memcpy(&src, &packet->data[6], sizeof(src));
+ 		memcpy(&src, &DATA(packet)[6], sizeof(src));
 -		learn_mac(&src);
 +		learn_mac(&src, vlan_id);
  	}
  
  	/* Lookup destination address */
  
- 	memcpy(&dest, &packet->data[0], sizeof(dest));
+ 	memcpy(&dest, &DATA(packet)[0], sizeof(dest));
 -	subnet = lookup_subnet_mac(NULL, &dest);
 +	subnet = lookup_subnet_mac(NULL, &dest, vlan_id);
  
- 	if(!subnet) {
+ 	if(!subnet || !subnet->owner) {
  		route_broadcast(source, packet);
-@@ -1058,13 +1071,11 @@ static void route_mac(node_t *source, vp
+@@ -1061,13 +1074,11 @@ static void route_mac(node_t *source, vp
  			return;
  		}
  
--	uint16_t type = packet->data[12] << 8 | packet->data[13];
+-	uint16_t type = DATA(packet)[12] << 8 | DATA(packet)[13];
 -
  	if(priorityinheritance) {
  		if(type == ETH_P_IP && packet->len >= ether_size + ip_size) {
--			packet->priority = packet->data[15];
-+			packet->priority = packet->data[ethlen+1];
+-			packet->priority = DATA(packet)[15];
++			packet->priority = DATA(packet)[ethlen+1];
  		} else if(type == ETH_P_IPV6 && packet->len >= ether_size + ip6_size) {
--			packet->priority = ((packet->data[14] & 0x0f) << 4) | (packet->data[15] >> 4);
-+			packet->priority = ((packet->data[ethlen] & 0x0f) << 4) | (packet->data[ethlen+1] >> 4);
+-			packet->priority = ((DATA(packet)[14] & 0x0f) << 4) | (DATA(packet)[15] >> 4);
++			packet->priority = ((DATA(packet)[ethlen] & 0x0f) << 4) | (DATA(packet)[ethlen+1] >> 4);
  		}
  	}
  
-@@ -1078,12 +1089,6 @@ static void route_mac(node_t *source, vp
+@@ -1081,12 +1092,6 @@ static void route_mac(node_t *source, vp
  
  	if(via && packet->len > via->mtu && via != myself) {
- 		ifdebug(TRAFFIC) logger(LOG_INFO, "Packet for %s (%s) length %d larger than MTU %d", subnet->owner->name, subnet->owner->hostname, packet->len, via->mtu);
+ 		logger(DEBUG_TRAFFIC, LOG_INFO, "Packet for %s (%s) length %d larger than MTU %d", subnet->owner->name, subnet->owner->hostname, packet->len, via->mtu);
 -		length_t ethlen = 14;
 -
 -		if(type == ETH_P_8021Q) {
--			type = packet->data[16] << 8 | packet->data[17];
+-			type = DATA(packet)[16] << 8 | DATA(packet)[17];
 -			ethlen += 4;
 -		}
  
  		if(type == ETH_P_IP && packet->len > 576 + ethlen) {
- 			if(packet->data[6 + ethlen] & 0x40) {
+ 			if(DATA(packet)[6 + ethlen] & 0x40) {
 --- a/src/subnet.c
 +++ b/src/subnet.c
-@@ -48,6 +48,7 @@ static bool cache_ipv6_valid[2];
- static int cache_ipv6_slot;
+@@ -44,6 +44,11 @@ static hash_t *ipv4_cache;
+ static hash_t *ipv6_cache;
+ static hash_t *mac_cache;
  
- static mac_t cache_mac_address[2];
-+static vlan_t cache_mac_vlan_id[2];
- static subnet_t *cache_mac_subnet[2];
- static bool cache_mac_valid[2];
- static int cache_mac_slot;
-@@ -63,6 +64,11 @@ void subnet_cache_flush(void) {
++typedef struct mac_cache_entry_t {
++	mac_t address;
++	vlan_t vlan_id;
++} mac_cache_entry_t;
++
+ void subnet_cache_flush(void) {
+ 	hash_clear(ipv4_cache);
+ 	hash_clear(ipv6_cache);
+@@ -57,7 +62,7 @@ void init_subnets(void) {
+ 
+ 	ipv4_cache = hash_alloc(0x100, sizeof(ipv4_t));
+ 	ipv6_cache = hash_alloc(0x100, sizeof(ipv6_t));
+-	mac_cache = hash_alloc(0x100, sizeof(mac_t));
++	mac_cache = hash_alloc(0x100, sizeof(mac_cache_entry_t));
+ }
+ 
+ void exit_subnets(void) {
+@@ -116,12 +121,12 @@ subnet_t *lookup_subnet(const node_t *ow
+ 	return splay_search(owner->subnet_tree, subnet);
+ }
+ 
+-subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address) {
++subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vlan_t vlan_id) {
+ 	subnet_t *r = NULL;
+ 
+ 	// Check if this address is cached
+-
+-	if((r = hash_search(mac_cache, address))) {
++	mac_cache_entry_t entry = { .address = *address, .vlan_id = vlan_id };
++	if((r = hash_search(mac_cache, &entry))) {
+ 		return r;
+ 	}
+ 
+@@ -132,7 +137,7 @@ subnet_t *lookup_subnet_mac(const node_t
+ 			continue;
+ 		}
+ 
+-		if(!memcmp(address, &p->net.mac.address, sizeof(*address))) {
++		if(!memcmp(address, &p->net.mac.address, sizeof *address) && (vlan_id == p->net.mac.vlan)) {
+ 			r = p;
+ 
+ 			if(!p->owner || p->owner->status.reachable) {
+@@ -144,7 +149,7 @@ subnet_t *lookup_subnet_mac(const node_t
+ 	// Cache the result
+ 
+ 	if(r) {
+-		hash_insert(mac_cache, address, r);
++		hash_insert(mac_cache, &entry, r);
+ 	}
+ 
+ 	return r;
+--- a/src/subnet.h
++++ b/src/subnet.h
+@@ -33,6 +33,7 @@ typedef enum subnet_type_t {
+ 
+ typedef struct subnet_mac_t {
+ 	mac_t address;
++	vlan_t vlan;
+ } subnet_mac_t;
+ 
+ typedef struct subnet_ipv4_t {
+@@ -82,7 +83,7 @@ extern bool maskcheck(const void *mask,
+ extern bool net2str(char *netstr, int len, const subnet_t *subnet);
+ extern bool str2net(subnet_t *subnet, const char *netstr);
+ extern subnet_t *lookup_subnet(const struct node_t *owner, const subnet_t *subnet);
+-extern subnet_t *lookup_subnet_mac(const struct node_t *owner, const mac_t *address);
++extern subnet_t *lookup_subnet_mac(const struct node_t *owner, const mac_t *address, const vlan_t vlan_id);
+ extern subnet_t *lookup_subnet_ipv4(const ipv4_t *address);
+ extern subnet_t *lookup_subnet_ipv6(const ipv6_t *address);
+ extern bool dump_subnets(struct connection_t *c);
+--- a/src/subnet_parse.c
++++ b/src/subnet_parse.c
+@@ -111,6 +111,11 @@ bool maskcheck(const void *va, int maskl
  static int subnet_compare_mac(const subnet_t *a, const subnet_t *b) {
  	int result;
  
@@ -123,18 +187,18 @@
 +	if(result)
 +		return result;
 +
- 	result = memcmp(&a->net.mac.address, &b->net.mac.address, sizeof(mac_t));
+ 	result = memcmp(&a->net.mac.address, &b->net.mac.address, sizeof(a->net.mac.address));
  
  	if(result) {
-@@ -210,6 +216,7 @@ bool str2net(subnet_t *subnet, const cha
+@@ -209,6 +214,7 @@ bool str2net(subnet_t *subnet, const cha
  	str[sizeof(str) - 1] = 0;
  	int consumed;
  
 +	unsigned int vlan_id;
- 	int weight = 10;
+ 	int weight = DEFAULT_WEIGHT;
  	char *weight_separator = strchr(str, '#');
  
-@@ -250,7 +257,7 @@ bool str2net(subnet_t *subnet, const cha
+@@ -249,7 +255,7 @@ bool str2net(subnet_t *subnet, const cha
  
  	uint16_t x[8];
  
@@ -143,7 +207,7 @@
  		/*
  		   Normally we should check that each part has two digits to prevent ambiguities.
  		   However, in old tinc versions net2str() will aggressively return MAC addresses with one-digit parts,
-@@ -267,6 +274,8 @@ bool str2net(subnet_t *subnet, const cha
+@@ -266,6 +272,8 @@ bool str2net(subnet_t *subnet, const cha
  			subnet->net.mac.address.x[i] = x[i];
  		}
  
@@ -152,74 +216,20 @@
  		return true;
  	}
  
-@@ -378,13 +387,14 @@ bool net2str(char *netstr, int len, cons
+@@ -380,13 +388,14 @@ bool net2str(char *netstr, int len, cons
  
  	switch(subnet->type) {
  	case SUBNET_MAC:
--		snprintf(netstr, len, "%x:%x:%x:%x:%x:%x#%d",
-+		snprintf(netstr, len, "%x:%x:%x:%x:%x:%x@%u#%d",
- 		         subnet->net.mac.address.x[0],
- 		         subnet->net.mac.address.x[1],
- 		         subnet->net.mac.address.x[2],
- 		         subnet->net.mac.address.x[3],
- 		         subnet->net.mac.address.x[4],
- 		         subnet->net.mac.address.x[5],
-+			 subnet->net.mac.vlan,
- 		         subnet->weight);
+-		result = snprintf(netstr, len, "%02x:%02x:%02x:%02x:%02x:%02x",
++		result = snprintf(netstr, len, "%02x:%02x:%02x:%02x:%02x:%02x@%u",
+ 		                  subnet->net.mac.address.x[0],
+ 		                  subnet->net.mac.address.x[1],
+ 		                  subnet->net.mac.address.x[2],
+ 		                  subnet->net.mac.address.x[3],
+ 		                  subnet->net.mac.address.x[4],
+-		                  subnet->net.mac.address.x[5]);
++		                  subnet->net.mac.address.x[5],
++				  subnet->net.mac.vlan);
+ 		netstr += result;
+ 		len -= result;
  		break;
- 
-@@ -428,7 +438,7 @@ subnet_t *lookup_subnet(const node_t *ow
- 	return avl_search(owner->subnet_tree, subnet);
- }
- 
--subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address) {
-+subnet_t *lookup_subnet_mac(const node_t *owner, const mac_t *address, const vlan_t vlan_id) {
- 	subnet_t *p, *r = NULL;
- 	avl_node_t *n;
- 	int i;
-@@ -444,6 +454,9 @@ subnet_t *lookup_subnet_mac(const node_t
- 			continue;
- 		}
- 
-+		if(vlan_id != cache_mac_vlan_id[i])
-+			continue;
-+
- 		if(!memcmp(address, &cache_mac_address[i], sizeof(*address))) {
- 			return cache_mac_subnet[i];
- 		}
-@@ -458,7 +471,7 @@ subnet_t *lookup_subnet_mac(const node_t
- 			continue;
- 		}
- 
--		if(!memcmp(address, &p->net.mac.address, sizeof(*address))) {
-+		if(!memcmp(address, &p->net.mac.address, sizeof *address) && (vlan_id == p->net.mac.vlan)) {
- 			r = p;
- 
- 			if(p->owner->status.reachable) {
-@@ -472,6 +485,7 @@ subnet_t *lookup_subnet_mac(const node_t
- 	cache_mac_slot = !cache_mac_slot;
- 	memcpy(&cache_mac_address[cache_mac_slot], address, sizeof(*address));
- 	cache_mac_subnet[cache_mac_slot] = r;
-+	cache_mac_vlan_id[cache_mac_slot] = vlan_id;
- 	cache_mac_valid[cache_mac_slot] = true;
- 
- 	return r;
---- a/src/subnet.h
-+++ b/src/subnet.h
-@@ -32,6 +32,7 @@ typedef enum subnet_type_t {
- 
- typedef struct subnet_mac_t {
- 	mac_t address;
-+	vlan_t vlan;
- } subnet_mac_t;
- 
- typedef struct subnet_ipv4_t {
-@@ -78,7 +79,7 @@ extern void subnet_update(struct node_t
- extern bool net2str(char *netstr, int len, const subnet_t *subnet);
- extern bool str2net(subnet_t *subnet, const char *netstr);
- extern subnet_t *lookup_subnet(const struct node_t *owner, const subnet_t *subnet);
--extern subnet_t *lookup_subnet_mac(const struct node_t *owner, const mac_t *address);
-+extern subnet_t *lookup_subnet_mac(const struct node_t *owner, const mac_t *address, const vlan_t vlan_id);
- extern subnet_t *lookup_subnet_ipv4(const ipv4_t *address);
- extern subnet_t *lookup_subnet_ipv6(const ipv6_t *address);
- extern void dump_subnets(void);
